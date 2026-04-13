@@ -429,8 +429,6 @@ This project can grow from a classroom demo into a more production-oriented biom
 
 ---
 
-
-
 ## 👥 Authors
 
 <table align="center">
@@ -470,9 +468,12 @@ This project can grow from a classroom demo into a more production-oriented biom
       <a href="https://github.com/sindhuraperii">
         <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
       </a>
+    </td>
+  </tr>
+</table>
 
 ---
-
+      
 ## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
