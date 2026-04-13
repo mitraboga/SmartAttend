@@ -116,8 +116,10 @@ def seed_default_admin(connection: sqlite3.Connection) -> None:
     created_at = iso_timestamp()
     connection.execute(
         """
-        INSERT OR IGNORE INTO admin_users (username, password_hash, created_at)
+        INSERT INTO admin_users (username, password_hash, created_at)
         VALUES (?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET
+            password_hash = excluded.password_hash
         """,
         (DEFAULT_ADMIN_USERNAME, hash_password(DEFAULT_ADMIN_PASSWORD), created_at),
     )

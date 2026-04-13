@@ -84,12 +84,45 @@ SmartAttend/
 
 ## Setup
 
+1. Copy the example environment file and adjust the values you want to override:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+2. Create a virtual environment and install dependencies:
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+3. Start the app:
+
+```powershell
 streamlit run app.py
 ```
+
+## Environment Configuration
+
+SmartAttend now loads configuration from a local `.env` file automatically.
+
+Important variables:
+
+- `SMARTATTEND_ADMIN_USER`: admin username shown on the login screen
+- `SMARTATTEND_ADMIN_PASSWORD`: admin password used for the seeded admin account
+- `SMARTATTEND_APP_TITLE`: dashboard title
+- `SMARTATTEND_DATA_DIR`: base directory for SQLite data, face samples, and liveness samples
+- `SMARTATTEND_MODELS_DIR`: trained model storage directory
+- `SMARTATTEND_ARTIFACTS_DIR`: evaluation output directory
+- `SMARTATTEND_DATABASE_PATH`: SQLite database file path
+- `SMARTATTEND_FACE_DETECTOR_BACKEND`: detector backend, normally `auto`
+- `SMARTATTEND_RECOGNITION_THRESHOLD`: confidence threshold for accepted face recognition predictions
+- `SMARTATTEND_LIVENESS_THRESHOLD`: confidence threshold for accepted live-face predictions
+- `SMARTATTEND_FACE_MATCHER_THRESHOLD`: fallback matcher similarity threshold
+
+For a new deployment, set a strong admin password before first run.
 
 ## Training
 
@@ -116,10 +149,7 @@ python -m src.evaluate_models
 - Username: `admin`
 - Password: `admin123`
 
-These can be changed with environment variables:
-
-- `SMARTATTEND_ADMIN_USER`
-- `SMARTATTEND_ADMIN_PASSWORD`
+These defaults are intended for local development only. Override them in `.env` for any real deployment.
 
 ## Privacy and Repository Notes
 
@@ -140,3 +170,37 @@ This repository is intended to store source code and project structure. Personal
 - Attendance percentage is event-based, not class-session based
 - Liveness robustness depends on collecting varied real and spoof samples
 - Public datasets and pretrained models are not bundled in the repo
+
+## Deployment
+
+### Local deployment
+
+1. Copy `.env.example` to `.env`
+2. Set your admin username and a strong admin password
+3. Install dependencies with `pip install -r requirements.txt`
+4. Start the app with `streamlit run app.py`
+
+### Docker deployment
+
+Build the image:
+
+```powershell
+docker build -t smartattend .
+```
+
+Run the container with a persistent data, model, and artifact mount:
+
+```powershell
+docker run --rm -p 8501:8501 --env-file .env -v "${PWD}\\data:/app/data" -v "${PWD}\\models:/app/models" -v "${PWD}\\artifacts:/app/artifacts" smartattend
+```
+
+Notes:
+
+- The host-mounted `data` directory preserves the SQLite database and collected face/liveness samples
+- The host-mounted `models` directory preserves trained CNN models
+- The host-mounted `artifacts` directory preserves evaluation plots and reports
+- If you deploy to a cloud service, inject the same variables from `.env.example` into the platform secret or environment settings instead of committing `.env`
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
