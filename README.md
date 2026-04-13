@@ -429,17 +429,47 @@ This project can grow from a classroom demo into a more production-oriented biom
 
 ---
 
-## 👤 Author
 
-<p align="center">
-  <b>Mitra Boga</b><br>
-  <a href="https://www.linkedin.com/in/bogamitra/">
-    <img src="https://img.shields.io/badge/LinkedIn-bogamitra-blue?logo=linkedin">
-  </a>
-  <a href="https://x.com/techtraboga">
-    <img src="https://img.shields.io/badge/X-techtraboga-black?logo=x">
-  </a>
-</p>
+
+## 👥 Authors
+
+<table align="center">
+  <tr>
+    <td align="center" width="220">
+      <b>Mitra Boga</b><br/><br/>
+      <a href="https://www.linkedin.com/in/bogamitra/">
+        <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
+      </a>
+      <a href="https://x.com/techtraboga">
+        <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
+      </a>
+    </td>
+    <td align="center" width="220">
+      <b>Yashweer Potelu</b><br/><br/>
+      <a href="https://www.linkedin.com/in/sai-yashweer-potelu-1233272a3/">
+        <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
+      </a>
+      <a href="https://github.com/yashweer23">
+        <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
+      </a>
+    </td>
+    <td align="center" width="220">
+      <b>Datla Akshith Varma</b><br/><br/>
+      <a href="https://www.linkedin.com/in/akshith-varma-datla-6a4251302/">
+        <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
+      </a>
+      <a href="https://github.com/Akshith-v">
+        <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
+      </a>
+    </td>
+    <td align="center" width="220">
+      <b>Gayatri Anapurna Sindhura Peri</b><br/><br/>
+      <a href="https://www.linkedin.com/in/gayathri-sindhura-peri-1a995b282/">
+        <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
+      </a>
+      <a href="https://github.com/sindhuraperii">
+        <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
+      </a>
 
 ---
 
