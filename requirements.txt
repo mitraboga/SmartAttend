@@ -1,11 +1,9 @@
 numpy
-opencv-python
+opencv-python-headless
 pandas
 Pillow
 scikit-learn
 streamlit
-tensorflow
 matplotlib
 seaborn
-mtcnn
 python-dotenv
