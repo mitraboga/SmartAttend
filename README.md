@@ -461,7 +461,7 @@ This project can grow from a classroom demo into a more production-oriented biom
       </a>
     </td>
     <td align="center" width="220">
-      <b>Gayatri Anapurna Sindhura Peri</b><br/><br/>
+      <b>Sindhura Peri</b><br/><br/>
       <a href="https://www.linkedin.com/in/gayathri-sindhura-peri-1a995b282/">
         <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
       </a>
