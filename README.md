@@ -1,4 +1,4 @@
-<h1 align="center">🎓 SmartAttend 🧠</h1>
+<h1 align="center">📶 SmartAttend 📸</h1>
 <h3 align="center">AI-Powered Smart Attendance System with Face Recognition, Liveness Detection & Secure Verification</h3>
 
 <p align="center">
