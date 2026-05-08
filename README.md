@@ -8,7 +8,6 @@
   <img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-green" alt="OpenCV" />
   <img src="https://img.shields.io/badge/Postgres-Managed%20DB-blue?logo=postgresql" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/S3-Object%20Storage-brightgreen?logo=amazonaws" alt="S3" />
-  <img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License" />
 </p>
 
 ---
