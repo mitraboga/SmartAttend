@@ -81,6 +81,117 @@ def inject_styles() -> None:
             padding-top: 1.25rem;
             padding-bottom: 2rem;
         }
+        [data-testid="stSidebar"] {
+            background:
+              radial-gradient(circle at top left, rgba(28, 201, 178, 0.18), transparent 22%),
+              linear-gradient(180deg, #0a5156 0%, #0b4148 58%, #12313d 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            background: transparent;
+        }
+        [data-testid="stSidebar"] .block-container {
+            padding-top: 1.4rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        [data-testid="stSidebar"] * {
+            color: #eef7f6;
+        }
+        [data-testid="stSidebar"] .stMarkdown p,
+        [data-testid="stSidebar"] .stMarkdown li,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] span {
+            color: #eef7f6;
+        }
+        .sidebar-shell {
+            padding-bottom: 0.25rem;
+        }
+        .sidebar-eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: rgba(235, 247, 246, 0.72);
+            margin-bottom: 0.65rem;
+        }
+        .sidebar-app-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+        }
+        .sidebar-summary {
+            margin-top: 0.65rem;
+            color: rgba(235, 247, 246, 0.82);
+            line-height: 1.55;
+            font-size: 0.95rem;
+        }
+        .sidebar-user-card {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.95rem 1rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+        .sidebar-user-role {
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(235, 247, 246, 0.68);
+            margin-bottom: 0.35rem;
+            font-weight: 700;
+        }
+        .sidebar-user-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.4rem;
+        }
+        .sidebar-user-badge {
+            display: inline-block;
+            padding: 0.18rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(28, 201, 178, 0.18);
+            border: 1px solid rgba(28, 201, 178, 0.22);
+            color: #b8ffef;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .sidebar-nav-label {
+            margin: 0.95rem 0 0.45rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.7rem;
+            color: rgba(235, 247, 246, 0.62);
+            font-weight: 700;
+        }
+        [data-testid="stSidebar"] .stButton > button {
+            width: 100%;
+            min-height: 2.7rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+            color: #eef7f6;
+            font-weight: 600;
+            box-shadow: none;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover {
+            border-color: rgba(28, 201, 178, 0.36);
+            background: rgba(255, 255, 255, 0.11);
+            color: #ffffff;
+        }
+        [data-testid="stSidebar"] .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #17a692 0%, #0d7e73 100%);
+            border-color: rgba(31, 224, 196, 0.2);
+            color: #ffffff;
+        }
+        [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+            background: linear-gradient(135deg, #20bba4 0%, #10897c 100%);
+            color: #ffffff;
+        }
         .hero {
             padding: 1.5rem 1.6rem;
             border-radius: 24px;
@@ -117,6 +228,7 @@ def inject_styles() -> None:
             color: rgba(255,255,255,0.8);
             font-size: 0.92rem;
             line-height: 1.5;
+            margin-bottom: 0.9rem;
         }
         </style>
         """,
@@ -835,6 +947,61 @@ def sidebar_pages_for_role(role: str) -> list[str]:
     return base_pages
 
 
+def current_page_for_role(role: str) -> str:
+    allowed = sidebar_pages_for_role(role)
+    current = st.session_state.get("current_page")
+    if current not in allowed:
+        current = allowed[0]
+        st.session_state["current_page"] = current
+    return current
+
+
+def render_sidebar_navigation(user: dict) -> str:
+    current = current_page_for_role(user["role"])
+    workspace_copy = (
+        "Administrator access keeps enrollment, sessions, verification review, and exports in one controlled workspace."
+        if user["role"] == "admin"
+        else "Faculty access keeps session control, attendance review, and reporting within owned course operations."
+    )
+    with st.sidebar:
+        st.markdown(
+            f"""
+            <div class="sidebar-shell">
+              <div class="sidebar-eyebrow">G-Learn Style</div>
+              <div class="sidebar-app-title">{APP_TITLE}</div>
+              <div class="sidebar-summary">Academic attendance workspace with enrollment, liveness verification, and secure reporting.</div>
+              <div class="sidebar-user-card">
+                <div class="sidebar-user-role">Platform {user['role'].title()}</div>
+                <div class="sidebar-user-name">{user['full_name']}</div>
+                <div class="sidebar-user-badge">{user['username']}</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if LOGO_PATH.exists():
+            st.image(str(LOGO_PATH), width=74)
+        st.markdown('<div class="sidebar-nav-label">Navigate</div>', unsafe_allow_html=True)
+        for candidate in sidebar_pages_for_role(user["role"]):
+            button_type = "primary" if candidate == current else "secondary"
+            if st.button(candidate, key=f"nav_{candidate}", type=button_type, use_container_width=True):
+                st.session_state["current_page"] = candidate
+                current = candidate
+        st.markdown(
+            f'<div class="sidebar-note">{workspace_copy}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+        if st.button("Reload Models", key="reload_models_sidebar", use_container_width=True):
+            load_face_detector.clear()
+            load_recognizer.clear()
+            load_liveness_detector.clear()
+            st.success("Model caches cleared.")
+        if st.button("Logout", key="logout_sidebar", use_container_width=True):
+            logout()
+    return current
+
+
 def main() -> None:
     inject_styles()
     user = authenticated_user()
@@ -842,21 +1009,7 @@ def main() -> None:
         render_login_page()
         return
 
-    with st.sidebar:
-        if LOGO_PATH.exists():
-            st.image(str(LOGO_PATH), width=84)
-        st.markdown(f"### {APP_TITLE}")
-        st.markdown(f"**{user['full_name']}**  \n`{user['role']}`")
-        st.markdown('<div class="sidebar-note">Role-scoped operations console for sections, sessions, verification, review, and exports.</div>', unsafe_allow_html=True)
-        page = st.radio("Navigate", sidebar_pages_for_role(user["role"]))
-        st.markdown("---")
-        if st.button("Reload Models"):
-            load_face_detector.clear()
-            load_recognizer.clear()
-            load_liveness_detector.clear()
-            st.success("Model caches cleared.")
-        if st.button("Logout"):
-            logout()
+    page = render_sidebar_navigation(user)
 
     if page == "Dashboard":
         render_dashboard(user)
