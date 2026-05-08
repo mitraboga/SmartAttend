@@ -1,5 +1,5 @@
 <h1 align="center">📶 SmartAttend 📸</h1>
-<h3 align="center">AI-Powered Smart Attendance System with Face Recognition, Liveness Detection & Secure Verification</h3>
+<h3 align="center">Smart Attendance System with Face Recognition, Liveness Detection & Secure Verification</h3>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue?logo=python" alt="Python" />
