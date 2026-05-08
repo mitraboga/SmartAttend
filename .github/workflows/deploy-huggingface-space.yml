@@ -17,16 +17,20 @@ jobs:
       HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check deployment secrets
         id: check
         run: |
-          if [ -z "${HF_TOKEN}" ] || [ -z "${HF_SPACE_ID}" ]; then
+          HF_TOKEN_CLEAN="$(printf '%s' "${HF_TOKEN}" | tr -d '\r\n')"
+          HF_SPACE_ID_CLEAN="$(printf '%s' "${HF_SPACE_ID}" | tr -d '\r\n')"
+          if [ -z "${HF_TOKEN_CLEAN}" ] || [ -z "${HF_SPACE_ID_CLEAN}" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "configured=true" >> "$GITHUB_OUTPUT"
+          printf 'hf_token=%s\n' "${HF_TOKEN_CLEAN}" >> "$GITHUB_OUTPUT"
+          printf 'hf_space_id=%s\n' "${HF_SPACE_ID_CLEAN}" >> "$GITHUB_OUTPUT"
 
       - name: Skip when Hugging Face deployment is not configured
         if: steps.check.outputs.configured != 'true'
@@ -46,11 +50,10 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           cd /tmp/hf-space
-          git init
+          git init -b main
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "Deploy ${GITHUB_SHA}"
-          git branch -M main
-          git remote add origin "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
+          git remote add origin "https://oauth2:${{ steps.check.outputs.hf_token }}@huggingface.co/spaces/${{ steps.check.outputs.hf_space_id }}"
           git push --force origin main
