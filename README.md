@@ -13,8 +13,8 @@
 ---
 
 <p align="center">
-  <a href="assets/demo.gif" target="_blank" rel="noopener noreferrer">
-    <img src="assets/demo.gif" width="95%" alt="SmartAttend Live Demo Preview"/>
+  <a href="https://smartattend-e4pk3jnsgry5egn8jppsmr.streamlit.app/" target="_blank" rel="noopener noreferrer">
+    <img src="assets/demo.gif" width="95%" alt="SmartAttend Streamlit Webpage"/>
   </a>
 </p>
 
