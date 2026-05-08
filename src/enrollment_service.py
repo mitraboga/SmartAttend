@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from pathlib import Path
 
 from src.config import FACES_DIR, LIVENESS_DIR
-from src.database import create_student, student_exists
+from src.database import audit_action, create_student, student_exists
 from src.face_detector import FaceDetector
 from src.liveness import LivenessDetector
+from src.storage import StorageBackend, get_storage_backend
 from src.utils import crop_face, safe_label, save_bgr_image, timestamp_slug
 
 
@@ -26,12 +26,16 @@ def enroll_student(
     year: str,
     program: str,
     course: str,
+    section_id: int | None,
     capture_bgr,
     detector: FaceDetector | None = None,
     liveness_detector: LivenessDetector | None = None,
+    created_by_user_id: int | None = None,
+    storage_backend: StorageBackend | None = None,
 ) -> EnrollmentResult:
     detector = detector or FaceDetector()
     liveness_detector = liveness_detector or LivenessDetector()
+    storage_backend = storage_backend or get_storage_backend()
 
     if student_exists(roll_no, email):
         return EnrollmentResult(success=False, message="A student with this roll number or email already exists.")
@@ -58,6 +62,7 @@ def enroll_student(
     capture_slug = timestamp_slug()
     image_path = face_dir / f"{face_label}_{capture_slug}.jpg"
     save_bgr_image(image_path, face)
+    stored_object = storage_backend.save_image(f"student-faces/{face_label}/{image_path.name}", face)
 
     real_liveness_dir = LIVENESS_DIR / "real"
     real_liveness_path = real_liveness_dir / f"enroll_{face_label}_{capture_slug}.jpg"
@@ -74,7 +79,23 @@ def enroll_student(
         face_label=face_label,
         face_dir=str(face_dir),
         primary_face_path=str(image_path),
+        section_id=section_id,
+        created_by_user_id=created_by_user_id,
+        primary_face_storage_uri=stored_object.uri,
     )
+    if student:
+        audit_action(
+            actor_user_id=created_by_user_id,
+            actor_role="admin",
+            action="student_enrolled",
+            entity_type="student",
+            entity_id=student["id"],
+            payload={
+                "roll_no": student["roll_no"],
+                "section_id": section_id,
+                "storage_backend": stored_object.backend,
+            },
+        )
 
     return EnrollmentResult(
         success=True,

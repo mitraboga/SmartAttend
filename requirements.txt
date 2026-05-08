@@ -7,3 +7,5 @@ streamlit
 matplotlib
 seaborn
 python-dotenv
+psycopg[binary]
+boto3

@@ -1,18 +1,64 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from src.attendance_service import verify_attendance_attempt
-from src.config import APP_TITLE, ARTIFACTS_DIR, DATABASE_PATH, FACE_LABELS_PATH, FACE_MODEL_PATH, LIVENESS_MODEL_PATH
-from src.database import DEFAULT_ADMIN_USERNAME, attendance_overview, get_evaluation_report, init_database, list_recent_attendance, list_recent_attempts, list_students, verify_admin
+from src.config import (
+    APP_TITLE,
+    ARTIFACTS_DIR,
+    DATABASE_PATH,
+    FACE_LABELS_PATH,
+    FACE_MODEL_PATH,
+    INSTITUTION_NAME,
+    LIVENESS_MODEL_PATH,
+    SESSION_TIMEOUT_MINUTES,
+    STORAGE_BACKEND,
+)
+from src.database import (
+    DEFAULT_ADMIN_USERNAME,
+    attendance_overview,
+    authenticate_user,
+    create_course,
+    create_course_offering,
+    create_department,
+    create_faculty_profile,
+    create_program,
+    create_section,
+    create_user,
+    export_attendance_csv,
+    export_exception_csv,
+    finalize_session_absences,
+    get_evaluation_report,
+    init_database,
+    list_audit_logs,
+    list_attendance_records,
+    list_class_sessions,
+    list_course_offerings,
+    list_courses,
+    list_departments,
+    list_exceptions,
+    list_faculty_users,
+    list_login_attempts,
+    list_model_versions,
+    list_programs,
+    list_recent_attendance,
+    list_recent_attempts,
+    list_sections,
+    list_students,
+    list_users,
+    resolve_exception,
+    update_class_session_status,
+    create_class_session,
+)
 from src.enrollment_service import enroll_student
 from src.evaluate_models import run_all_evaluations
 from src.face_detector import FaceDetector
 from src.liveness import LivenessDetector
 from src.liveness_dataset_service import dataset_ready_for_training, liveness_counts, save_liveness_sample
 from src.recognizer import FaceRecognizer
+from src.storage import get_storage_backend
 from src.train_liveness_model import train_liveness_model
 from src.utils import decode_uploaded_image
 
@@ -26,498 +72,51 @@ def inject_styles() -> None:
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700;800&display=swap');
-
-        :root {
-            --bg: #f5eadc;
-            --panel: rgba(255, 250, 244, 0.9);
-            --panel-strong: #fffdf8;
-            --sidebar: #112a35;
-            --text: #18232b;
-            --muted: #64727a;
-            --accent: #c95d3d;
-            --line: rgba(17, 42, 53, 0.12);
-            --success: #1e7c5c;
-            --warning: #b96d13;
-            --danger: #a53e2e;
-            --shadow: 0 20px 45px rgba(17, 42, 53, 0.12);
-            --radius-lg: 28px;
-            --radius-md: 20px;
-            --radius-sm: 14px;
-        }
-
-        html, body, [class*="css"]  {
-            font-family: "Inter", "Trebuchet MS", "Segoe UI", sans-serif;
-            color: var(--text);
-        }
-
         .stApp {
             background:
-              radial-gradient(circle at top left, rgba(201, 93, 61, 0.18), transparent 30%),
-              radial-gradient(circle at bottom right, rgba(17, 42, 53, 0.18), transparent 28%),
-              linear-gradient(135deg, #f8efe5 0%, #f3e5d4 100%);
+              radial-gradient(circle at top left, rgba(201, 93, 61, 0.16), transparent 24%),
+              linear-gradient(135deg, #f7eee2 0%, #f2e1cf 100%);
         }
-
-        h1, h2, h3, .hero-title, .page-title, .sidebar-title {
-            font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
-        }
-
-        header[data-testid="stHeader"] {
-            background: transparent;
-        }
-
-        [data-testid="stSidebar"] {
-            background:
-              linear-gradient(180deg, rgba(17, 42, 53, 0.98), rgba(20, 52, 64, 0.96)),
-              var(--sidebar);
-            border-right: 0;
-        }
-
-        [data-testid="stSidebar"] * {
-            color: #f4efe8;
-        }
-
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-        [data-testid="stSidebar"] label,
-        [data-testid="stSidebar"] .stCaption {
-            color: rgba(244, 239, 232, 0.82);
-        }
-
-        [data-testid="stSidebar"] .stRadio > div {
-            gap: 0.55rem;
-        }
-
-        [data-testid="stSidebar"] .stRadio label {
-            background: rgba(255, 255, 255, 0.06);
-            padding: 0.85rem 1rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            font-weight: 700;
-        }
-
-        [data-testid="stSidebar"] .stRadio label:hover {
-            background: rgba(255, 255, 255, 0.12);
-        }
-
-        [data-testid="stSidebar"] .stRadio label[data-baseweb="radio"] > div:first-child {
-            display: none;
-        }
-
-        [data-testid="stSidebar"] button[kind="secondary"] {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 0;
-        }
-
         .block-container {
-            padding-top: 1.4rem;
+            padding-top: 1.25rem;
             padding-bottom: 2rem;
         }
-
-        .brand-lockup {
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .brand-copy {
-            display: grid;
-            gap: 0.18rem;
-        }
-
-        .eyebrow {
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .sidebar-eyebrow {
-            color: #f0b09d;
-        }
-
-        .sidebar-title {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #f4efe8;
-        }
-
-        .sidebar-copy {
-            font-size: 0.95rem;
-            color: rgba(244, 239, 232, 0.78);
-            line-height: 1.5;
-            margin-top: 0.2rem;
-        }
-
         .hero {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 1.25rem;
-            padding: 1.7rem;
-            border-radius: var(--radius-lg);
-            background:
-              linear-gradient(135deg, rgba(255, 253, 248, 0.92), rgba(255, 245, 235, 0.86)),
-              white;
-            border: 1px solid rgba(255, 255, 255, 0.46);
-            box-shadow: var(--shadow);
+            padding: 1.5rem 1.6rem;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(17, 42, 53, 0.08);
+            box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
             margin-bottom: 1rem;
         }
-
-        .hero-main {
-            display: grid;
-            gap: 0.35rem;
+        .hero h1 {
+            margin: 0.2rem 0 0.35rem;
+            font-size: 2.2rem;
+            color: #18232b;
         }
-
-        .hero-title {
+        .hero p {
             margin: 0;
-            font-size: 2.3rem;
-            line-height: 1.05;
-            color: var(--text);
-        }
-
-        .hero-subtitle {
-            margin: 0;
-            font-size: 1rem;
-            max-width: 54rem;
-            color: var(--muted);
+            color: #64727a;
             line-height: 1.55;
         }
-
-        .hero-chip {
-            padding: 0.95rem 1.1rem;
-            border-radius: 999px;
-            background: rgba(17, 42, 53, 0.08);
-            color: var(--sidebar);
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .page-panel {
-            padding: 1.4rem;
-            border-radius: var(--radius-lg);
-            background: var(--panel);
-            border: 1px solid rgba(255, 255, 255, 0.45);
-            box-shadow: var(--shadow);
-        }
-
-        .panel-title {
-            margin: 0 0 0.2rem;
-            font-size: 1.55rem;
-            color: var(--text);
-        }
-
-        .panel-copy {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.55;
-        }
-
-        div[data-testid="stMetric"] {
-            background: var(--panel);
-            border: 1px solid rgba(255, 255, 255, 0.45);
-            border-radius: var(--radius-md);
-            padding: 1rem 1rem 0.85rem;
-            box-shadow: var(--shadow);
-        }
-
-        div[data-testid="stMetric"] label {
-            color: var(--muted) !important;
-            font-weight: 700 !important;
-        }
-
-        div[data-testid="stMetricValue"] {
-            color: var(--text);
-            font-family: "Source Serif 4", Georgia, serif;
-        }
-
-        .stButton > button {
-            border: 0;
-            border-radius: 999px;
-            padding: 0.8rem 1.15rem;
-            background: linear-gradient(135deg, var(--accent), #df7f55);
-            color: white;
-            font-weight: 700;
-            box-shadow: 0 12px 24px rgba(201, 93, 61, 0.22);
-        }
-
-        .stButton > button:hover {
-            transform: translateY(-1px);
-        }
-
-        .stTextInput input,
-        .stSelectbox [data-baseweb="select"] > div,
-        .stNumberInput input,
-        .stTextArea textarea {
-            border-radius: 14px !important;
-            border: 1px solid rgba(17, 42, 53, 0.16) !important;
-            background: var(--panel-strong) !important;
-        }
-
-        [data-testid="stDataFrame"], [data-testid="stTable"] {
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-
-        div[data-testid="stAlert"] {
-            border-radius: 16px;
-        }
-
-        .logo-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.7rem;
-            padding: 0.7rem 0.95rem;
-            border-radius: 999px;
-            background: rgba(17, 42, 53, 0.08);
-            color: var(--sidebar);
-            font-weight: 700;
-        }
-
-        .auth-shell {
-            min-height: calc(100vh - 5rem);
-            display: grid;
-            grid-template-columns: 1.08fr 0.92fr;
-            gap: 0;
-            border-radius: 30px;
-            overflow: hidden;
-            box-shadow: 0 28px 56px rgba(25, 28, 29, 0.12);
-            background: white;
-        }
-
-        .auth-left {
-            position: relative;
-            padding: 3rem;
-            background: linear-gradient(135deg, #004c4c 0%, #006666 100%);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-        }
-
-        .auth-left::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-              radial-gradient(circle at top right, rgba(162, 240, 239, 0.18), transparent 28%),
-              radial-gradient(circle at bottom left, rgba(255,255,255,0.12), transparent 24%);
-            pointer-events: none;
-        }
-
-        .auth-left-inner,
-        .auth-left-footer,
-        .auth-right-inner {
-            position: relative;
-            z-index: 1;
-        }
-
-        .auth-left-title {
-            margin: 0 0 0.4rem;
-            font-family: "Inter", sans-serif;
-            font-size: 2.6rem;
-            font-weight: 800;
-            color: white;
-        }
-
-        .auth-left-rule {
-            width: 56px;
-            height: 4px;
-            border-radius: 999px;
-            background: #a2f0ef;
-        }
-
-        .auth-kicker {
-            margin: 0 0 1rem;
-            font-size: 0.74rem;
-            letter-spacing: 0.35em;
+        .eyebrow {
             text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 0.78rem;
             font-weight: 700;
-            color: rgba(203, 231, 245, 0.7);
+            color: #c95d3d;
         }
-
-        .auth-headline {
-            margin: 0;
-            font-family: "Inter", sans-serif;
-            font-size: 3rem;
-            font-weight: 800;
-            line-height: 1.08;
-            color: white;
-            max-width: 14ch;
+        .login-card {
+            padding: 1.75rem;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(17, 42, 53, 0.08);
+            box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
         }
-
-        .auth-copy {
-            margin: 1.25rem 0 0;
-            max-width: 34rem;
-            font-size: 1.05rem;
-            line-height: 1.75;
-            color: rgba(203, 231, 245, 0.82);
-        }
-
-        .auth-feature-grid {
-            margin-top: 2rem;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .auth-feature {
-            padding: 1.25rem;
-            border-radius: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(10px);
-        }
-
-        .auth-feature-icon {
-            width: 48px;
-            height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.25rem;
-            font-weight: 800;
-            margin-bottom: 0.8rem;
-        }
-
-        .auth-feature h3 {
-            margin: 0;
-            font-family: "Inter", sans-serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .auth-feature p {
-            margin: 0.55rem 0 0;
+        .sidebar-note {
+            color: rgba(255,255,255,0.8);
             font-size: 0.92rem;
-            line-height: 1.6;
-            color: rgba(203, 231, 245, 0.74);
-        }
-
-        .auth-left-footer {
-            margin-top: 2rem;
-            font-size: 0.75rem;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: rgba(203, 231, 245, 0.44);
-        }
-
-        .auth-right {
-            background: rgba(255,255,255,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-        }
-
-        .auth-right-inner {
-            width: 100%;
-            max-width: 36rem;
-        }
-
-        .auth-brand-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .auth-brand-main {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .auth-logo-tile {
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
-            background: #006666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 24px 48px -12px rgba(25, 28, 29, 0.08);
-        }
-
-        .auth-small-tag {
-            font-size: 0.74rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #004c4c;
-        }
-
-        .auth-right-title {
-            margin: 0.2rem 0 0;
-            font-family: "Inter", sans-serif;
-            font-size: 2rem;
-            font-weight: 800;
-            color: #191c1d;
-        }
-
-        .auth-back-pill {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.65rem 1rem;
-            border-radius: 14px;
-            border: 1px solid rgba(0, 76, 76, 0.1);
-            background: white;
-            color: #004c4c;
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .auth-form-copy {
-            margin: 0 0 1.5rem;
-            font-size: 0.96rem;
-            line-height: 1.7;
-            color: #3f4948;
-        }
-
-        .auth-form-wrap {
-            padding-top: 0.4rem;
-        }
-
-        .login-screen [data-testid="stSidebar"],
-        .login-screen [data-testid="collapsedControl"] {
-            display: none !important;
-        }
-
-        .login-screen .block-container {
-            max-width: 1320px;
-            padding-top: 1rem;
-        }
-
-        @media (max-width: 900px) {
-            .hero {
-                flex-direction: column;
-            }
-
-            .auth-shell {
-                grid-template-columns: 1fr;
-            }
-
-            .auth-left {
-                padding: 2rem;
-            }
-
-            .auth-headline {
-                font-size: 2.2rem;
-                max-width: none;
-            }
-
-            .auth-feature-grid {
-                grid-template-columns: 1fr;
-            }
+            line-height: 1.5;
         }
         </style>
         """,
@@ -525,159 +124,23 @@ def inject_styles() -> None:
     )
 
 
-def render_brand_sidebar() -> None:
-    st.markdown(
-        """
-        <div class="brand-lockup">
-          <div class="brand-copy">
-            <div class="eyebrow sidebar-eyebrow">GLearn Style</div>
-            <h2 class="sidebar-title">SmartAttend</h2>
-            <p class="sidebar-copy">Academic attendance workspace with enrollment, liveness verification, and reporting.</p>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if LOGO_PATH.exists():
-        st.image(str(LOGO_PATH), width=84)
-
-
-def render_sidebar_footer() -> None:
-    st.markdown("---")
-    st.caption("Administrator session active")
-    if st.button("Reload Models", key="sidebar_reload_models"):
-        load_recognizer.clear()
-        load_liveness_detector.clear()
-        load_face_detector.clear()
-        st.success("Detector and model caches cleared.")
-    if st.button("Logout", key="sidebar_logout"):
-        set_admin_authenticated(False)
-        st.rerun()
-
-
-def render_page_header(title: str, eyebrow: str, subtitle: str, chip: str | None = None) -> None:
-    chip_value = chip or datetime.now().strftime("%d %b %Y")
+def render_page_header(title: str, eyebrow: str, subtitle: str) -> None:
     logo_html = ""
     if LOGO_PATH.exists():
-        logo_html = f'<img src="data:image/png;base64,{logo_to_base64()}" alt="University logo" style="height:56px; width:auto; border-radius:12px; margin-bottom:0.75rem;" />'
+        import base64
+
+        logo_html = f'<img src="data:image/png;base64,{base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")}" alt="logo" style="height:54px;border-radius:12px;margin-bottom:0.85rem;" />'
     st.markdown(
         f"""
         <div class="hero">
-          <div class="hero-main">
             <div class="eyebrow">{eyebrow}</div>
-            <div>{logo_html}</div>
-            <h1 class="hero-title">{title}</h1>
-            <p class="hero-subtitle">{subtitle}</p>
-          </div>
-          <div class="hero-chip">{chip_value}</div>
+            {logo_html}
+            <h1>{title}</h1>
+            <p>{subtitle}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-
-@st.cache_data
-def logo_to_base64() -> str:
-    import base64
-
-    if not LOGO_PATH.exists():
-        return ""
-    return base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
-
-
-def render_login_page() -> None:
-    st.markdown(
-        """
-        <style>
-        [data-testid="stSidebar"], [data-testid="collapsedControl"] {
-            display: none !important;
-        }
-        .block-container {
-            max-width: 1320px;
-            padding-top: 1rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-    left_col, right_col = st.columns([1.08, 0.92], gap="large")
-
-    with left_col:
-        st.markdown(
-            """
-            <div class="auth-left">
-              <div class="auth-left-inner">
-                <h1 class="auth-left-title">My-GITAM</h1>
-                <div class="auth-left-rule"></div>
-                <div style="margin-top: 4rem;">
-                  <p class="auth-kicker">Administration Console</p>
-                  <h2 class="auth-headline">Access your SmartAttend operations workspace.</h2>
-                  <p class="auth-copy">
-                    Sign in once as administrator to manage student enrollment, attendance verification,
-                    liveness protection, reporting, and spoof-attempt auditing from a single academic dashboard.
-                  </p>
-                  <div class="auth-feature-grid">
-                    <div class="auth-feature">
-                      <div class="auth-feature-icon">ID</div>
-                      <h3>Identity First</h3>
-                      <p>Admin access controls the full attendance workflow before students are processed.</p>
-                    </div>
-                    <div class="auth-feature">
-                      <div class="auth-feature-icon">DB</div>
-                      <h3>Database Ready</h3>
-                      <p>SQLite-backed student records, official attendance, and attempt logs stay in one place.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="auth-left-footer">Academic Management Portal © 2026 GITAM University</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with right_col:
-        logo_html = ""
-        if LOGO_PATH.exists():
-            logo_html = f'<img src="data:image/png;base64,{logo_to_base64()}" alt="University Logo" style="height:40px; width:40px; object-fit:contain;" />'
-        st.markdown(
-            f"""
-            <div class="auth-right">
-              <div class="auth-right-inner">
-                <div class="auth-brand-row">
-                  <div class="auth-brand-main">
-                    <div class="auth-logo-tile">{logo_html}</div>
-                    <div>
-                      <div class="auth-small-tag">G-Learn Administration</div>
-                      <h2 class="auth-right-title">Admin Login</h2>
-                    </div>
-                  </div>
-                  <div class="auth-back-pill">Secure Access</div>
-                </div>
-                <p class="auth-form-copy">
-                  Sign in with the SmartAttend administrator credentials to open the dashboard.
-                  This replaces the public landing flow and keeps the portal locked until an admin session starts.
-                </p>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        with st.form("admin_login_form", clear_on_submit=False):
-            username = st.text_input("Admin Username", value=DEFAULT_ADMIN_USERNAME, key="login_username")
-            password = st.text_input("Admin Password", type="password", key="login_password")
-            submitted = st.form_submit_button("Access Dashboard", use_container_width=True)
-
-        if submitted:
-            if verify_admin(username, password):
-                set_admin_authenticated(True)
-                st.session_state["admin_username"] = username
-                st.success("Login successful. Opening dashboard...")
-                st.rerun()
-            else:
-                st.error("Invalid admin credentials.")
-
-        st.caption("Set `SMARTATTEND_ADMIN_USER` and `SMARTATTEND_ADMIN_PASSWORD` in the environment to change the default admin credentials.")
-        st.markdown("</div></div>", unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -695,554 +158,726 @@ def load_liveness_detector() -> LivenessDetector:
     return LivenessDetector()
 
 
-def set_admin_authenticated(value: bool) -> None:
-    st.session_state["admin_authenticated"] = value
-
-
-def is_admin_authenticated() -> bool:
-    return bool(st.session_state.get("admin_authenticated", False))
-
-
 def decode_camera_value(camera_value) -> object | None:
     if camera_value is None:
         return None
     return decode_uploaded_image(camera_value.getvalue())
 
 
-def load_students_frame() -> pd.DataFrame:
-    students = list_students()
-    if not students:
-        return pd.DataFrame(
-            columns=[
-                "first_name",
-                "last_name",
-                "roll_no",
-                "email",
-                "year",
-                "program",
-                "course",
-                "present_count",
-                "absent_count",
-                "attendance_percentage",
-            ]
-        )
-    frame = pd.DataFrame(students)
-    return frame[
-        [
-            "first_name",
-            "last_name",
-            "roll_no",
-            "email",
-            "year",
-            "program",
-            "course",
-            "present_count",
-            "absent_count",
-            "attendance_percentage",
-        ]
-    ]
+def set_authenticated_user(user: dict | None) -> None:
+    st.session_state["auth_user"] = user
+    st.session_state["auth_seen_at"] = datetime.now().isoformat(timespec="seconds")
 
 
-def load_attendance_frame(limit: int = 50) -> pd.DataFrame:
-    rows = list_recent_attendance(limit=limit)
+def authenticated_user() -> dict | None:
+    user = st.session_state.get("auth_user")
+    last_seen = st.session_state.get("auth_seen_at")
+    if not user or not last_seen:
+        return None
+    seen_at = datetime.fromisoformat(last_seen)
+    if datetime.now() - seen_at > timedelta(minutes=SESSION_TIMEOUT_MINUTES):
+        set_authenticated_user(None)
+        st.session_state["auth_expired"] = True
+        return None
+    st.session_state["auth_seen_at"] = datetime.now().isoformat(timespec="seconds")
+    return user
+
+
+def logout() -> None:
+    set_authenticated_user(None)
+    st.rerun()
+
+
+def session_label(session_row: dict) -> str:
+    return f"{session_row['session_date']} | {session_row['course_code']} | {session_row['section_name']} | {session_row['session_title']} | {session_row['status']}"
+
+
+def offering_label(offering_row: dict) -> str:
+    return f"{offering_row['course_code']} - {offering_row['course_title']} | {offering_row['program_name'] or 'Program'} {offering_row['year_label']} {offering_row['section_name']} | {offering_row['faculty_name']}"
+
+
+def section_label(section_row: dict) -> str:
+    program = section_row.get("program_name") or "Program"
+    return f"{program} | {section_row['year_label']} | Section {section_row['name']}"
+
+
+def dataframe_or_info(rows: list[dict], message: str) -> None:
     if not rows:
-        return pd.DataFrame(
-            columns=[
-                "attendance_date",
-                "attendance_time",
-                "roll_no",
-                "first_name",
-                "last_name",
-                "status",
-                "confidence",
-                "liveness_score",
-                "note",
-            ]
+        st.info(message)
+        return
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def render_login_page() -> None:
+    if st.session_state.pop("auth_expired", False):
+        st.warning("Your session expired. Sign in again.")
+
+    left, right = st.columns([1.1, 0.9], gap="large")
+    with left:
+        render_page_header(
+            title=APP_TITLE,
+            eyebrow="Operations Console",
+            subtitle="Production-style attendance workspace with roles, faculty-owned class sessions, exception review, audit logging, and model-aware verification.",
         )
-    frame = pd.DataFrame(rows)
-    return frame[
-        [
-            "attendance_date",
-            "attendance_time",
-            "roll_no",
-            "first_name",
-            "last_name",
-            "status",
-            "confidence",
-            "liveness_score",
-            "note",
-        ]
-    ]
-
-
-def load_attempts_frame(limit: int = 50) -> pd.DataFrame:
-    rows = list_recent_attempts(limit=limit)
-    if not rows:
-        return pd.DataFrame(
-            columns=[
-                "attempt_date",
-                "attempt_time",
-                "claimed_roll_no",
-                "official_status",
-                "attempt_outcome",
-                "confidence",
-                "liveness_score",
-                "note",
-                "predicted_roll_no",
-            ]
+        st.markdown(
+            """
+            <div class="login-card">
+              <strong>What changed from the university demo:</strong><br/>
+              class-session attendance, faculty scoping, review queues, audit trails,
+              calibrated liveness gates, exports, and operational dashboards.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-
-    frame = pd.DataFrame(rows)
-    display_frame = pd.DataFrame(
-        {
-            "attempt_date": frame["attempt_date"],
-            "attempt_time": frame["attempt_time"],
-            "claimed_roll_no": frame["claimed_roll_no"],
-            "official_status": frame["official_status"].fillna("-"),
-            "attempt_outcome": frame["attempt_outcome"],
-            "confidence": frame["confidence"],
-            "liveness_score": frame["liveness_score"],
-            "note": frame["note"],
-            "predicted_roll_no": frame["predicted_roll_no"].fillna("-"),
-        }
-    )
-    return display_frame
-
-
-def model_health_rows() -> list[dict[str, str]]:
-    face_detector = load_face_detector()
-    recognizer = load_recognizer()
-    liveness_detector = load_liveness_detector()
-    counts = liveness_counts()
-    return [
-        {"component": "SQLite Database", "status": "ready", "details": str(DATABASE_PATH)},
-        {"component": "Face Detector", "status": face_detector.backend, "details": "MTCNN when available, Haar fallback otherwise"},
-        {"component": "Recognition Runtime", "status": "cnn" if recognizer.available else "fallback", "details": "CNN if trained, dataset matcher otherwise"},
-        {"component": "Face Model", "status": "ready" if FACE_MODEL_PATH.exists() else "missing", "details": str(FACE_MODEL_PATH.name)},
-        {"component": "Face Labels", "status": "ready" if FACE_LABELS_PATH.exists() else "missing", "details": str(FACE_LABELS_PATH.name)},
-        {"component": "Liveness Model", "status": "ready" if LIVENESS_MODEL_PATH.exists() else "missing", "details": str(LIVENESS_MODEL_PATH.name)},
-        {"component": "Liveness Dataset", "status": f"real={counts['real']} fake={counts['fake']}", "details": "Collect both classes before training"},
-    ]
+    with right:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.subheader("Admin / Faculty Login")
+        username = st.text_input("Username", value=DEFAULT_ADMIN_USERNAME, key="login_username")
+        password = st.text_input("Password", type="password", key="login_password")
+        if st.button("Sign In", type="primary", use_container_width=True):
+            user, message = authenticate_user(username, password)
+            if user is None:
+                st.error(message)
+            else:
+                set_authenticated_user(user)
+                st.success(message)
+                st.rerun()
+        st.caption(f"{INSTITUTION_NAME} operations access. Use `.env` to rotate credentials.")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_dashboard() -> None:
-    overview = attendance_overview()
+# PAGE_RENDERERS
+
+
+def render_dashboard(user: dict) -> None:
+    overview = attendance_overview(user=user)
+    role_copy = "faculty-owned operations" if user["role"] == "faculty" else "institution-wide operations"
     render_page_header(
-        title=APP_TITLE,
-        eyebrow="Academic Workspace",
-        subtitle="Enrollment-first attendance workflow with face detection, liveness-aware verification, SQLite storage, and audit-friendly reporting.",
-        chip=f"Attempts Logged: {overview['total_attempts']}",
+        title="Operations Dashboard",
+        eyebrow=user["role"].title(),
+        subtitle=f"Monitor {role_copy}, open attendance sessions, verification activity, and review load from one place.",
     )
 
-    metric_cols = st.columns(4)
-    metric_cols[0].metric("Enrolled Students", overview["total_students"])
-    metric_cols[1].metric("Present Today", overview["present_today"])
-    metric_cols[2].metric("Absent Today", overview["absent_today"])
-    metric_cols[3].metric("Spoof Attempts Today", overview["spoof_attempts_today"])
+    metrics = st.columns(6)
+    metrics[0].metric("Students", overview["total_students"])
+    metrics[1].metric("Open Sessions", overview["open_sessions"])
+    metrics[2].metric("Present Today", overview["present_today"])
+    metrics[3].metric("Absent Today", overview["absent_today"])
+    metrics[4].metric("Spoof Attempts", overview["spoof_attempts_today"])
+    metrics[5].metric("Open Exceptions", overview["open_exceptions"])
 
     left, right = st.columns([1.2, 1.0])
-
     with left:
-        st.subheader("System Health")
-        st.dataframe(pd.DataFrame(model_health_rows()), use_container_width=True, hide_index=True)
-
-        student_frame = load_students_frame()
-        st.subheader("Attendance Percentage")
-        st.caption("Percentages are based on recorded attendance outcomes for each enrolled student.")
-        if student_frame.empty:
-            st.info("No enrolled students yet.")
-        else:
-            chart_frame = student_frame[["roll_no", "attendance_percentage"]].set_index("roll_no")
-            st.bar_chart(chart_frame, use_container_width=True)
-
-    with right:
         st.subheader("Recent Attendance")
-        attendance_frame = load_attendance_frame(limit=10)
-        if attendance_frame.empty:
-            st.info("No attendance scans recorded yet.")
+        dataframe_or_info(list_recent_attendance(limit=12, user=user), "No attendance records yet.")
+        st.subheader("Roster Completion")
+        students = list_students(user=user)
+        if students:
+            chart = pd.DataFrame(students)[["roll_no", "attendance_percentage"]].set_index("roll_no")
+            st.bar_chart(chart, use_container_width=True)
         else:
-            st.dataframe(attendance_frame, use_container_width=True, hide_index=True)
-
-        st.subheader("Recent Attempts")
-        attempts_frame = load_attempts_frame(limit=10)
-        if attempts_frame.empty:
-            st.info("No attendance attempts logged yet.")
-        else:
-            st.dataframe(attempts_frame, use_container_width=True, hide_index=True)
-
-        face_report = get_evaluation_report("face_model")
-        liveness_report = get_evaluation_report("liveness_model")
-        st.subheader("Latest Evaluations")
-        if face_report or liveness_report:
-            report_rows = []
-            if face_report and "accuracy" in face_report:
-                report_rows.append({"model": "Face Recognition", "accuracy": round(face_report["accuracy"] * 100, 2)})
-            if liveness_report and "accuracy" in liveness_report:
-                report_rows.append({"model": "Liveness", "accuracy": round(liveness_report["accuracy"] * 100, 2)})
-            if report_rows:
-                st.dataframe(pd.DataFrame(report_rows), use_container_width=True, hide_index=True)
-        else:
-            st.info("No evaluation reports generated yet.")
+            st.info("No students are enrolled in the visible scope yet.")
+    with right:
+        st.subheader("Recent Verification Attempts")
+        dataframe_or_info(list_recent_attempts(limit=12, user=user), "No attempts logged yet.")
+        st.subheader("Open Exceptions")
+        dataframe_or_info(list_exceptions(user=user, status="open", limit=12), "No open exceptions.")
 
 
-def render_enrollment() -> None:
+def render_user_management(user: dict) -> None:
     render_page_header(
-        title="Student Enrollment",
-        eyebrow="Registration",
-        subtitle="Capture a live face scan and register the student into the academic roster with verified metadata and face memory.",
+        title="User and Faculty Management",
+        eyebrow="Admin",
+        subtitle="Create operator accounts, assign faculty ownership, and keep role boundaries explicit.",
     )
-
-    col1, col2 = st.columns(2)
-    first_name = col1.text_input("First Name", key="enroll_first_name")
-    last_name = col2.text_input("Last Name", key="enroll_last_name")
-    roll_no = col1.text_input("Roll Number", key="enroll_roll_no")
-    email = col2.text_input("Email", key="enroll_email")
-    year = col1.selectbox("Year", ["1st Year", "2nd Year", "3rd Year", "4th Year"], key="enroll_year")
-    program = col2.text_input("Program", placeholder="B. Tech", key="enroll_program")
-    course = st.text_input("Course / Branch", placeholder="CSE", key="enroll_course")
-    camera_value = st.camera_input("Capture Face for Enrollment", key="enroll_camera")
-
-    if st.button("Enroll Student", type="primary", key="enroll_submit"):
-        capture_bgr = decode_camera_value(camera_value)
-        if capture_bgr is None:
-            st.error("Capture a face image before submitting enrollment.")
-            return
-        required_values = [first_name, last_name, roll_no, email, year, program, course]
-        if any(not value for value in required_values):
-            st.error("All student details are required.")
-            return
-
-        with st.spinner("Processing enrollment..."):
-            result = enroll_student(
-                first_name=first_name,
-                last_name=last_name,
-                roll_no=roll_no,
-                email=email,
-                year=year,
-                program=program,
-                course=course,
-                capture_bgr=capture_bgr,
-                detector=load_face_detector(),
-                liveness_detector=load_liveness_detector(),
-            )
-
-        if result.success:
-            load_recognizer.clear()
-            st.success(result.message)
-            if result.student:
-                student = result.student
-                st.dataframe(
-                    pd.DataFrame(
-                        [
-                            {
-                                "first_name": student["first_name"],
-                                "last_name": student["last_name"],
-                                "roll_no": student["roll_no"],
-                                "email": student["email"],
-                                "year": student["year"],
-                                "program": student["program"],
-                                "course": student["course"],
-                            }
-                        ]
-                    ),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            if result.liveness_checked:
-                st.caption(f"Liveness score: {result.liveness_score:.2f}")
-            else:
-                st.warning("Enrollment completed without a trained liveness model. Train the liveness model for spoof protection.")
-        else:
-            st.error(result.message)
-
-
-def render_attendance() -> None:
-    render_page_header(
-        title="Attendance Verification",
-        eyebrow="Live Check-In",
-        subtitle="Verify the claimed roll number with a fresh face scan and liveness validation before attendance is accepted.",
-    )
-
-    liveness_ready = load_liveness_detector().available
-    if not liveness_ready:
-        counts = liveness_counts()
-        st.error(
-            "Liveness protection is required for attendance, but no trained liveness model is loaded. "
-            f"Current dataset counts: real={counts['real']}, fake={counts['fake']}."
+    departments = list_departments()
+    roles = ["faculty", "admin"]
+    with st.form("create_user_form"):
+        left, right = st.columns(2)
+        full_name = left.text_input("Full Name")
+        username = right.text_input("Username")
+        email = left.text_input("Email")
+        password = right.text_input("Temporary Password")
+        role = left.selectbox("Role", roles)
+        title = right.text_input("Faculty Title", placeholder="Assistant Professor")
+        department_id = left.selectbox(
+            "Department",
+            options=[0] + [department["id"] for department in departments],
+            format_func=lambda value: "Unassigned" if value == 0 else next((department["name"] for department in departments if department["id"] == value), "Department"),
         )
-        st.info("Go to `Liveness Setup`, save real and fake samples, train the liveness model, then reload the model from the app.")
+        submitted = st.form_submit_button("Create Account", type="primary")
+    if submitted:
+        try:
+            created = create_user(username=username, full_name=full_name, email=email, password=password, role=role)
+            if role == "faculty":
+                create_faculty_profile(
+                    user_id=created["id"],
+                    department_id=None if department_id == 0 else department_id,
+                    title=title,
+                )
+            st.success(f"Created {role} account for {created['full_name']}.")
+        except Exception as error:
+            st.error(str(error))
 
-    claimed_roll_no = st.text_input("Claimed Roll Number", key="attendance_roll_no")
-    camera_value = st.camera_input("Capture Face for Attendance", key="attendance_camera")
+    st.subheader("Faculty Accounts")
+    dataframe_or_info(list_faculty_users(), "No faculty accounts yet.")
+    st.subheader("All User Accounts")
+    dataframe_or_info(list_users(), "No user accounts found.")
 
-    if st.button("Verify and Mark Attendance", type="primary", key="attendance_submit", disabled=not liveness_ready):
+
+def render_academic_setup(user: dict) -> None:
+    render_page_header(
+        title="Academic Setup",
+        eyebrow="Admin",
+        subtitle="Model the institution: departments, programs, sections, courses, and faculty-owned offerings.",
+    )
+
+    departments = list_departments()
+    programs = list_programs()
+    sections = list_sections()
+    courses = list_courses()
+    faculty = list_faculty_users()
+
+    dep_col, prog_col = st.columns(2)
+    with dep_col.form("department_form"):
+        st.markdown("#### Add Department")
+        name = st.text_input("Department Name")
+        code = st.text_input("Department Code", placeholder="CSE")
+        if st.form_submit_button("Create Department"):
+            try:
+                create_department(name, code)
+                st.success("Department created.")
+            except Exception as error:
+                st.error(str(error))
+
+    with prog_col.form("program_form"):
+        st.markdown("#### Add Program")
+        name = st.text_input("Program Name", placeholder="B. Tech CSE")
+        code = st.text_input("Program Code", placeholder="BTECH-CSE")
+        department_id = st.selectbox(
+            "Department",
+            options=[0] + [department["id"] for department in departments],
+            format_func=lambda value: "Unassigned" if value == 0 else next((department["name"] for department in departments if department["id"] == value), "Department"),
+        )
+        if st.form_submit_button("Create Program"):
+            try:
+                create_program(department_id=None if department_id == 0 else department_id, name=name, code=code)
+                st.success("Program created.")
+            except Exception as error:
+                st.error(str(error))
+
+    sec_col, course_col = st.columns(2)
+    with sec_col.form("section_form"):
+        st.markdown("#### Add Section")
+        program_id = st.selectbox(
+            "Program",
+            options=[0] + [program["id"] for program in programs],
+            format_func=lambda value: "Unassigned" if value == 0 else next((program["name"] for program in programs if program["id"] == value), "Program"),
+        )
+        year_label = st.text_input("Year Label", placeholder="3rd Year")
+        section_name = st.text_input("Section Name", placeholder="A")
+        semester_label = st.text_input("Semester Label", placeholder="Semester 6")
+        if st.form_submit_button("Create Section"):
+            try:
+                create_section(program_id=None if program_id == 0 else program_id, name=section_name, year_label=year_label, semester_label=semester_label)
+                st.success("Section created.")
+            except Exception as error:
+                st.error(str(error))
+
+    with course_col.form("course_form"):
+        st.markdown("#### Add Course")
+        department_id = st.selectbox(
+            "Course Department",
+            options=[0] + [department["id"] for department in departments],
+            format_func=lambda value: "Unassigned" if value == 0 else next((department["name"] for department in departments if department["id"] == value), "Department"),
+            key="course_department_id",
+        )
+        course_code = st.text_input("Course Code", placeholder="CSE301")
+        title = st.text_input("Course Title", placeholder="Operating Systems")
+        credits = st.number_input("Credit Hours", min_value=1, max_value=8, value=3)
+        if st.form_submit_button("Create Course"):
+            try:
+                create_course(department_id=None if department_id == 0 else department_id, course_code=course_code, title=title, credit_hours=int(credits))
+                st.success("Course created.")
+            except Exception as error:
+                st.error(str(error))
+
+    st.markdown("---")
+    if not courses or not sections or not faculty:
+        st.info("Create at least one course, section, and faculty account before creating course offerings.")
+    else:
+        with st.form("offering_form"):
+            st.markdown("#### Create Course Offering")
+            course_id = st.selectbox(
+                "Course",
+                options=[course["id"] for course in courses],
+                format_func=lambda value: next((f"{course['course_code']} - {course['title']}" for course in courses if course["id"] == value), "Course"),
+            )
+            section_id = st.selectbox(
+                "Section",
+                options=[section["id"] for section in sections],
+                format_func=lambda value: next((section_label(section) for section in sections if section["id"] == value), "Section"),
+            )
+            faculty_user_id = st.selectbox(
+                "Faculty Owner",
+                options=[person["id"] for person in faculty],
+                format_func=lambda value: next((person["full_name"] for person in faculty if person["id"] == value), "Faculty"),
+            )
+            term_name = st.text_input("Term", placeholder="Monsoon")
+            academic_year = st.text_input("Academic Year", placeholder="2026-2027")
+            if st.form_submit_button("Create Offering", type="primary"):
+                try:
+                    create_course_offering(course_id=course_id, section_id=section_id, faculty_user_id=faculty_user_id, term_name=term_name, academic_year=academic_year)
+                    st.success("Course offering created.")
+                except Exception as error:
+                    st.error(str(error))
+
+    st.subheader("Departments")
+    dataframe_or_info(departments, "No departments created yet.")
+    st.subheader("Programs")
+    dataframe_or_info(programs, "No programs created yet.")
+    st.subheader("Sections")
+    dataframe_or_info(sections, "No sections created yet.")
+    st.subheader("Courses")
+    dataframe_or_info(courses, "No courses created yet.")
+    st.subheader("Course Offerings")
+    dataframe_or_info(list_course_offerings(), "No offerings created yet.")
+
+
+def render_students(user: dict) -> None:
+    render_page_header(
+        title="Student Enrollment and Roster",
+        eyebrow="Roster",
+        subtitle="Enroll students into real academic sections so attendance is tied to course offerings and not just a face scan.",
+    )
+
+    sections = list_sections()
+    programs = {program["id"]: program for program in list_programs()}
+    section_id = st.selectbox(
+        "Section",
+        options=[0] + [section["id"] for section in sections],
+        format_func=lambda value: "Select a section" if value == 0 else next((section_label(section) for section in sections if section["id"] == value), "Section"),
+    )
+    selected_section = next((section for section in sections if section["id"] == section_id), None)
+    program_name = programs.get(selected_section["program_id"], {}).get("name", "") if selected_section else ""
+    year_label = selected_section["year_label"] if selected_section else ""
+
+    with st.form("student_enrollment_form"):
+        left, right = st.columns(2)
+        first_name = left.text_input("First Name")
+        last_name = right.text_input("Last Name")
+        roll_no = left.text_input("Roll Number")
+        email = right.text_input("Email")
+        program = left.text_input("Program", value=program_name)
+        course = right.text_input("Branch / Course", placeholder="CSE")
+        year = left.text_input("Year", value=year_label)
+        st.caption("Capture a face image after filling the academic record.")
+        camera_value = st.camera_input("Enrollment Face Capture")
+        submitted = st.form_submit_button("Enroll Student", type="primary")
+
+    if submitted:
+        capture_bgr = decode_camera_value(camera_value)
+        if section_id == 0:
+            st.error("Select a section before enrolling the student.")
+        elif capture_bgr is None:
+            st.error("Capture a face image before submitting enrollment.")
+        else:
+            try:
+                result = enroll_student(
+                    first_name=first_name,
+                    last_name=last_name,
+                    roll_no=roll_no,
+                    email=email,
+                    year=year,
+                    program=program,
+                    course=course,
+                    section_id=section_id,
+                    capture_bgr=capture_bgr,
+                    detector=load_face_detector(),
+                    liveness_detector=load_liveness_detector(),
+                    created_by_user_id=user["id"],
+                    storage_backend=get_storage_backend(),
+                )
+                if result.success:
+                    load_recognizer.clear()
+                    st.success(result.message)
+                else:
+                    st.error(result.message)
+            except Exception as error:
+                st.error(str(error))
+
+    st.subheader("Roster")
+    offerings = list_course_offerings(user=user)
+    filter_offering_id = st.selectbox(
+        "Filter by Offering",
+        options=[0] + [offering["id"] for offering in offerings],
+        format_func=lambda value: "All visible sections" if value == 0 else next((offering_label(offering) for offering in offerings if offering["id"] == value), "Offering"),
+        key="student_offering_filter",
+    )
+    roster = list_students(user=user, offering_id=None if filter_offering_id == 0 else filter_offering_id)
+    dataframe_or_info(roster, "No students in the current scope yet.")
+
+
+def render_sessions(user: dict) -> None:
+    render_page_header(
+        title="Session Management",
+        eyebrow="Attendance Windows",
+        subtitle="Create course sessions, open and close attendance windows, and finalize absences at the session boundary.",
+    )
+    offerings = list_course_offerings(user=user, active_only=True)
+    if not offerings:
+        st.warning("No active offerings are available in your scope. Create offerings before creating sessions.")
+    else:
+        with st.form("create_session_form"):
+            offering_id = st.selectbox(
+                "Course Offering",
+                options=[offering["id"] for offering in offerings],
+                format_func=lambda value: next((offering_label(offering) for offering in offerings if offering["id"] == value), "Offering"),
+            )
+            session_title = st.text_input("Session Title", placeholder="Week 5 Lecture")
+            left, right = st.columns(2)
+            session_date = left.date_input("Session Date")
+            location = right.text_input("Location", placeholder="Room C-204")
+            start_time = left.time_input("Start Time")
+            end_time = right.time_input("End Time")
+            open_at = left.time_input("Attendance Opens")
+            close_at = right.time_input("Attendance Closes")
+            notes = st.text_area("Notes", height=90)
+            submitted = st.form_submit_button("Create Session", type="primary")
+        if submitted:
+            try:
+                create_class_session(
+                    offering_id=offering_id,
+                    session_title=session_title,
+                    session_date=session_date.isoformat(),
+                    start_time=start_time.strftime("%H:%M:%S"),
+                    end_time=end_time.strftime("%H:%M:%S"),
+                    attendance_open_at=f"{session_date.isoformat()}T{open_at.strftime('%H:%M:%S')}",
+                    attendance_close_at=f"{session_date.isoformat()}T{close_at.strftime('%H:%M:%S')}",
+                    location=location,
+                    notes=notes,
+                    created_by_user_id=user["id"],
+                )
+                st.success("Class session created.")
+            except Exception as error:
+                st.error(str(error))
+
+    sessions = list_class_sessions(user=user, limit=300)
+    st.subheader("Session Operations")
+    if sessions:
+        target_session_id = st.selectbox(
+            "Select Session",
+            options=[session["id"] for session in sessions],
+            format_func=lambda value: next((session_label(session) for session in sessions if session["id"] == value), "Session"),
+        )
+        action = st.selectbox("Action", ["open", "scheduled", "closed", "finalize_absences"])
+        if st.button("Apply Session Action"):
+            try:
+                if action == "finalize_absences":
+                    created = finalize_session_absences(target_session_id, user["id"])
+                    st.success(f"Finalized session and created {created} absent records.")
+                else:
+                    update_class_session_status(target_session_id, action, user["id"])
+                    st.success(f"Session status updated to {action}.")
+            except Exception as error:
+                st.error(str(error))
+    dataframe_or_info(sessions, "No class sessions created yet.")
+
+
+def render_attendance(user: dict) -> None:
+    render_page_header(
+        title="Live Attendance Verification",
+        eyebrow="Session Check-In",
+        subtitle="Verify attendance only against open class sessions, with liveness gates, rate limits, and exception creation on failure.",
+    )
+    open_sessions = list_class_sessions(user=user, status="open", limit=100)
+    if not open_sessions:
+        st.warning("No open class sessions are available. Open a session first from Session Management.")
+        return
+
+    session_id = st.selectbox(
+        "Open Session",
+        options=[session["id"] for session in open_sessions],
+        format_func=lambda value: next((session_label(session) for session in open_sessions if session["id"] == value), "Session"),
+    )
+    claimed_roll_no = st.text_input("Claimed Roll Number")
+    camera_value = st.camera_input("Attendance Face Capture", key="attendance_camera")
+    if st.button("Verify Attendance", type="primary"):
         capture_bgr = decode_camera_value(camera_value)
         if capture_bgr is None:
-            st.error("Capture a face image before marking attendance.")
+            st.error("Capture a face image before submitting attendance.")
             return
         if not claimed_roll_no.strip():
             st.error("Claimed roll number is required.")
             return
 
-        with st.spinner("Verifying identity and liveness..."):
-            decision = verify_attendance_attempt(
-                claimed_roll_no=claimed_roll_no,
-                capture_bgr=capture_bgr,
-                detector=load_face_detector(),
-                recognizer=load_recognizer(),
-                liveness_detector=load_liveness_detector(),
-            )
-
+        decision = verify_attendance_attempt(
+            session_id=session_id,
+            claimed_roll_no=claimed_roll_no,
+            capture_bgr=capture_bgr,
+            actor_user_id=user["id"],
+            actor_role=user["role"],
+            detector=load_face_detector(),
+            recognizer=load_recognizer(),
+            liveness_detector=load_liveness_detector(),
+        )
         if decision.success:
             st.success(decision.message)
         else:
-            if decision.status in {"Retry", "Unknown"}:
-                st.warning(decision.message)
-            else:
-                st.error(decision.message)
+            st.error(decision.message)
 
         if decision.student:
             st.dataframe(
                 pd.DataFrame(
                     [
                         {
-                            "verified_for": f"{decision.student['first_name']} {decision.student['last_name']}",
+                            "student": f"{decision.student['first_name']} {decision.student['last_name']}",
                             "roll_no": decision.student["roll_no"],
-                            "email": decision.student["email"],
-                            "year": decision.student["year"],
-                            "program": decision.student["program"],
-                            "course": decision.student["course"],
                             "status": decision.status,
                             "confidence": round(decision.confidence, 4),
                             "liveness_score": round(decision.liveness_score, 4),
+                            "attempt_outcome": decision.attempt_outcome,
+                            "exception_id": decision.exception_id,
                         }
                     ]
                 ),
                 use_container_width=True,
                 hide_index=True,
             )
-
         if decision.predicted_student:
-            st.caption(
-                "Predicted identity: "
-                f"{decision.predicted_student['first_name']} {decision.predicted_student['last_name']} "
-                f"({decision.predicted_student['roll_no']})"
-            )
+            st.caption(f"Predicted identity: {decision.predicted_student['first_name']} {decision.predicted_student['last_name']} ({decision.predicted_student['roll_no']})")
 
 
-def render_students() -> None:
-    if not is_admin_authenticated():
-        st.warning("Admin login is required to view enrolled students and percentages.")
-        return
-
+def render_exceptions(user: dict) -> None:
     render_page_header(
-        title="Enrolled Students",
-        eyebrow="Roster",
-        subtitle="Review student records, attendance totals, and current attendance percentage from the official SQLite roster.",
+        title="Exception Review Queue",
+        eyebrow="Faculty Review",
+        subtitle="Review spoof alerts, identity mismatches, and failed verifications before approving or rejecting manual attendance outcomes.",
     )
-    frame = load_students_frame()
-    if frame.empty:
-        st.info("No students are enrolled yet.")
+    open_exceptions = list_exceptions(user=user, status="open", limit=200)
+    dataframe_or_info(open_exceptions, "No open exceptions to review.")
+    if not open_exceptions:
         return
 
-    query = st.text_input("Search by name, roll number, email, or course", key="student_search")
-    if query.strip():
-        mask = frame.astype(str).apply(lambda column: column.str.contains(query, case=False, na=False))
-        frame = frame[mask.any(axis=1)]
-
-    st.dataframe(frame, use_container_width=True, hide_index=True)
-
-
-def render_liveness_setup() -> None:
-    if not is_admin_authenticated():
-        st.warning("Admin login is required to manage liveness setup and training.")
-        return
-
-    render_page_header(
-        title="Liveness Setup",
-        eyebrow="Anti-Spoofing",
-        subtitle="Collect real and fake face samples, train the liveness classifier, and keep spoof resistance aligned with the portal workflow.",
+    exception_id = st.selectbox(
+        "Select Exception",
+        options=[row["id"] for row in open_exceptions],
+        format_func=lambda value: next((f"#{row['id']} | {row.get('roll_no','Unknown')} | {row['reason']} | {row['course_code']}" for row in open_exceptions if row["id"] == value), "Exception"),
     )
-
-    counts = liveness_counts()
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Real Samples", counts["real"])
-    col2.metric("Fake Samples", counts["fake"])
-    col3.metric("Model Status", "Ready" if load_liveness_detector().available else "Missing")
-
-    st.markdown("#### Add Real Sample")
-    real_capture = st.camera_input("Capture a live face", key="liveness_real_camera")
-    if st.button("Save Real Sample", key="save_real_sample"):
-        image = decode_camera_value(real_capture)
-        if image is None:
-            st.error("Capture a live face first.")
-        else:
-            result = save_liveness_sample(image, label="real", detector=load_face_detector(), source_prefix="real")
-            if result.success:
-                st.success(result.message)
-                st.rerun()
-            else:
-                st.error(result.message)
-
-    st.markdown("#### Add Fake Sample")
-    st.caption("Point the camera at a printed face or a phone/laptop screen showing a face.")
-    fake_capture = st.camera_input("Capture a spoof sample", key="liveness_fake_camera")
-    if st.button("Save Fake Sample", key="save_fake_sample"):
-        image = decode_camera_value(fake_capture)
-        if image is None:
-            st.error("Capture a fake face sample first.")
-        else:
-            result = save_liveness_sample(image, label="fake", detector=load_face_detector(), source_prefix="fake")
-            if result.success:
-                st.success(result.message)
-                st.rerun()
-            else:
-                st.error(result.message)
-
-    st.markdown("#### Train Liveness Model")
-    ready, counts = dataset_ready_for_training()
-    epochs = st.number_input("Epochs", min_value=1, max_value=100, value=15, step=1, key="liveness_epochs")
-    batch_size = st.number_input("Batch Size", min_value=2, max_value=64, value=8, step=2, key="liveness_batch")
-    validation_split = st.slider("Validation Split", min_value=0.1, max_value=0.4, value=0.2, step=0.05, key="liveness_val_split")
-
-    if not ready:
-        st.warning(
-            "Collect more samples before training. "
-            f"Minimum suggested starting point: 5 real and 5 fake. Current counts: real={counts['real']}, fake={counts['fake']}."
-        )
-
-    if st.button("Train Liveness Model", key="train_liveness_button"):
+    resolution = st.selectbox("Resolution", ["approved_present", "approved_excused", "rejected"])
+    note = st.text_area("Review Note", height=100)
+    if st.button("Resolve Exception", type="primary"):
         try:
-            with st.spinner("Training liveness model..."):
-                result = train_liveness_model(
-                    epochs=int(epochs),
-                    batch_size=int(batch_size),
-                    validation_split=float(validation_split),
-                )
-            load_liveness_detector.clear()
-            st.success("Liveness model trained successfully.")
-            st.json(result)
+            resolved_status = None
+            if resolution == "approved_present":
+                resolved_status = "Present"
+            elif resolution == "approved_excused":
+                resolved_status = "Excused"
+            resolve_exception(
+                exception_id=exception_id,
+                reviewer_user_id=user["id"],
+                resolution=resolution,
+                resolution_note=note,
+                resolved_attendance_status=resolved_status,
+            )
+            st.success("Exception resolved.")
         except Exception as error:
-            st.error(f"Liveness training failed: {error}")
-
-    if st.button("Reload Liveness Model", key="reload_liveness_only"):
-        load_liveness_detector.clear()
-        st.success("Liveness model cache cleared. The next prediction will load the latest model.")
+            st.error(str(error))
 
 
-def render_reports() -> None:
-    if not is_admin_authenticated():
-        st.warning("Admin login is required to access evaluation and reporting.")
-        return
-
+def render_reports(user: dict) -> None:
     render_page_header(
-        title="Evaluation and Reporting",
-        eyebrow="Model Reports",
-        subtitle="Generate confusion matrices, accuracy reports, false-acceptance metrics, and recent attempt logs for academic review.",
+        title="Reports and Analytics",
+        eyebrow="Operational Reporting",
+        subtitle="Export attendance by session or offering, inspect evaluation outputs, and monitor model registry state.",
+    )
+    offerings = list_course_offerings(user=user)
+    sessions = list_class_sessions(user=user, limit=300)
+    offering_id = st.selectbox(
+        "Offering Filter",
+        options=[0] + [offering["id"] for offering in offerings],
+        format_func=lambda value: "All offerings" if value == 0 else next((offering_label(offering) for offering in offerings if offering["id"] == value), "Offering"),
+    )
+    session_id = st.selectbox(
+        "Session Filter",
+        options=[0] + [session["id"] for session in sessions],
+        format_func=lambda value: "All sessions" if value == 0 else next((session_label(session) for session in sessions if session["id"] == value), "Session"),
     )
 
-    if st.button("Run Evaluation Suite", key="run_evaluations"):
-        with st.spinner("Evaluating trained models..."):
-            results = run_all_evaluations()
-        st.success("Evaluation run completed.")
-        st.json(results)
+    records = list_attendance_records(
+        user=user,
+        offering_id=None if offering_id == 0 else offering_id,
+        session_id=None if session_id == 0 else session_id,
+    )
+    dataframe_or_info(records, "No attendance records in the selected scope.")
+    if records:
+        csv_bytes = pd.DataFrame(records).to_csv(index=False).encode("utf-8")
+        st.download_button("Download Attendance CSV", data=csv_bytes, file_name="attendance_records.csv", mime="text/csv")
 
+    exceptions = export_exception_csv(user=user)
+    if exceptions:
+        exception_csv = pd.DataFrame(exceptions).to_csv(index=False).encode("utf-8")
+        st.download_button("Download Exception CSV", data=exception_csv, file_name="attendance_exceptions.csv", mime="text/csv")
+
+    st.subheader("Evaluation Reports")
     face_report = get_evaluation_report("face_model")
     liveness_report = get_evaluation_report("liveness_model")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("#### Face Recognition")
-        if face_report and "accuracy" in face_report:
-            st.metric("Accuracy", f"{face_report['accuracy'] * 100:.2f}%")
-            st.json(face_report["classification_report"])
-            face_matrix = ARTIFACTS_DIR / "face_confusion_matrix.png"
-            if face_matrix.exists():
-                st.image(str(face_matrix))
+    left, right = st.columns(2)
+    with left:
+        if face_report:
+            st.json(face_report)
         else:
-            st.info("Face model evaluation is not available yet.")
-
-    with col2:
-        st.markdown("#### Liveness Detection")
-        if liveness_report and "accuracy" in liveness_report:
-            st.metric("Accuracy", f"{liveness_report['accuracy'] * 100:.2f}%")
-            st.metric("False Acceptance Rate", f"{liveness_report['false_acceptance_rate'] * 100:.2f}%")
-            st.metric("False Rejection Rate", f"{liveness_report['false_rejection_rate'] * 100:.2f}%")
-            st.json(liveness_report["classification_report"])
-            liveness_matrix = ARTIFACTS_DIR / "liveness_confusion_matrix.png"
-            if liveness_matrix.exists():
-                st.image(str(liveness_matrix))
+            st.info("No face evaluation report saved yet.")
+    with right:
+        if liveness_report:
+            st.json(liveness_report)
         else:
-            st.info("Liveness model evaluation is not available yet.")
+            st.info("No liveness evaluation report saved yet.")
 
-    st.markdown("#### Attendance Attempt Log")
-    attempts_frame = load_attempts_frame(limit=100)
-    if attempts_frame.empty:
-        st.info("No attendance attempts logged yet.")
-    else:
-        st.dataframe(attempts_frame, use_container_width=True, hide_index=True)
+    st.subheader("Model Registry")
+    dataframe_or_info(list_model_versions(), "No model versions registered yet.")
 
 
-def render_admin() -> None:
+def render_liveness_ops(user: dict) -> None:
     render_page_header(
-        title="Admin Access",
-        eyebrow="Operations",
-        subtitle="Manage secure access, model reloads, and environment-backed administrator controls for the SmartAttend console.",
+        title="Liveness Operations",
+        eyebrow="Model Ops",
+        subtitle="Collect anti-spoof samples, train the liveness classifier, and monitor deployment readiness for the attendance gate.",
     )
-    if not is_admin_authenticated():
-        username = st.text_input("Admin Username", value=DEFAULT_ADMIN_USERNAME, key="admin_username")
-        password = st.text_input("Admin Password", type="password", key="admin_password")
-        if st.button("Login", key="admin_login"):
-            if verify_admin(username, password):
-                set_admin_authenticated(True)
-                st.success("Admin login successful.")
-                st.rerun()
-            else:
-                st.error("Invalid admin credentials.")
-        st.caption("Set SMARTATTEND_ADMIN_USER and SMARTATTEND_ADMIN_PASSWORD in the environment to change the default admin credentials.")
-        return
+    counts = liveness_counts()
+    cols = st.columns(3)
+    cols[0].metric("Real Samples", counts["real"])
+    cols[1].metric("Fake Samples", counts["fake"])
+    cols[2].metric("Model Loaded", "Yes" if load_liveness_detector().available else "No")
 
-    st.success("Admin session active.")
-    st.write(f"Database path: `{DATABASE_PATH}`")
-    st.write("Use this section after new training runs to refresh cached model state inside the app.")
-    if st.button("Reload Recognition and Liveness Models", key="reload_models"):
-        load_recognizer.clear()
-        load_liveness_detector.clear()
-        load_face_detector.clear()
-        st.success("Cached detector and model state cleared.")
-    if st.button("Logout", key="admin_logout"):
-        set_admin_authenticated(False)
-        st.rerun()
+    left, right = st.columns(2)
+    with left:
+        real_capture = st.camera_input("Capture Real Sample", key="liveness_real")
+        if st.button("Save Real Sample"):
+            image = decode_camera_value(real_capture)
+            if image is None:
+                st.error("Capture a live face first.")
+            else:
+                result = save_liveness_sample(image, label="real", detector=load_face_detector(), source_prefix="real")
+                if result.success:
+                    st.success(result.message)
+                else:
+                    st.error(result.message)
+    with right:
+        fake_capture = st.camera_input("Capture Fake Sample", key="liveness_fake")
+        if st.button("Save Fake Sample"):
+            image = decode_camera_value(fake_capture)
+            if image is None:
+                st.error("Capture a spoof sample first.")
+            else:
+                result = save_liveness_sample(image, label="fake", detector=load_face_detector(), source_prefix="fake")
+                if result.success:
+                    st.success(result.message)
+                else:
+                    st.error(result.message)
+
+    ready, current_counts = dataset_ready_for_training()
+    st.caption(f"Training readiness: real={current_counts['real']} fake={current_counts['fake']}")
+    epochs = st.number_input("Epochs", min_value=1, max_value=100, value=15, step=1)
+    batch_size = st.number_input("Batch Size", min_value=2, max_value=64, value=8, step=2)
+    validation_split = st.slider("Validation Split", min_value=0.1, max_value=0.4, value=0.2, step=0.05)
+    if not ready:
+        st.warning("Collect more balanced real and fake samples before training.")
+    if st.button("Train Liveness Model", disabled=not ready):
+        try:
+            result = train_liveness_model(epochs=int(epochs), batch_size=int(batch_size), validation_split=float(validation_split))
+            load_liveness_detector.clear()
+            st.success("Liveness model trained.")
+            st.json(result)
+        except Exception as error:
+            st.error(str(error))
+    if st.button("Run Evaluation Suite"):
+        try:
+            results = run_all_evaluations()
+            st.success("Evaluation completed.")
+            st.json(results)
+        except Exception as error:
+            st.error(str(error))
+
+
+def render_security_ops(user: dict) -> None:
+    render_page_header(
+        title="Security and Observability",
+        eyebrow="Admin",
+        subtitle="Inspect audit logs, login pressure, model inventory, and deployment posture across the attendance platform.",
+    )
+    left, right = st.columns(2)
+    with left:
+        st.subheader("Login Attempts")
+        dataframe_or_info(list_login_attempts(limit=200), "No login attempts logged yet.")
+        st.subheader("Audit Trail")
+        dataframe_or_info(list_audit_logs(limit=200), "No audit events recorded yet.")
+    with right:
+        st.subheader("Model Health")
+        rows = [
+            {"component": "Database", "status": "ready", "details": str(DATABASE_PATH)},
+            {"component": "Storage Backend", "status": STORAGE_BACKEND, "details": "Object storage mirror for enrolled faces"},
+            {"component": "Face Detector", "status": load_face_detector().backend, "details": "MTCNN when available, Haar fallback otherwise"},
+            {"component": "Face Model", "status": "ready" if FACE_MODEL_PATH.exists() else "missing", "details": FACE_MODEL_PATH.name},
+            {"component": "Face Labels", "status": "ready" if FACE_LABELS_PATH.exists() else "missing", "details": FACE_LABELS_PATH.name},
+            {"component": "Liveness Model", "status": "ready" if LIVENESS_MODEL_PATH.exists() else "missing", "details": LIVENESS_MODEL_PATH.name},
+        ]
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.subheader("Registered Model Versions")
+        dataframe_or_info(list_model_versions(), "No model metadata registered yet.")
+        st.caption(f"Artifacts directory: {ARTIFACTS_DIR}")
+
+
+def sidebar_pages_for_role(role: str) -> list[str]:
+    base_pages = ["Dashboard", "Students", "Sessions", "Attendance", "Exceptions", "Reports"]
+    if role == "admin":
+        return ["Dashboard", "Users", "Academic Setup", "Students", "Sessions", "Attendance", "Exceptions", "Reports", "Liveness Ops", "Security"]
+    return base_pages
 
 
 def main() -> None:
     inject_styles()
-
-    if not is_admin_authenticated():
+    user = authenticated_user()
+    if user is None:
         render_login_page()
         return
 
     with st.sidebar:
-        render_brand_sidebar()
-        page = st.radio(
-            "Navigate",
-            ["Dashboard", "Enroll Student", "Mark Attendance", "Students", "Liveness Setup", "Reports"],
-        )
-        st.caption("Administrator access unlocked")
-        render_sidebar_footer()
+        if LOGO_PATH.exists():
+            st.image(str(LOGO_PATH), width=84)
+        st.markdown(f"### {APP_TITLE}")
+        st.markdown(f"**{user['full_name']}**  \n`{user['role']}`")
+        st.markdown('<div class="sidebar-note">Role-scoped operations console for sections, sessions, verification, review, and exports.</div>', unsafe_allow_html=True)
+        page = st.radio("Navigate", sidebar_pages_for_role(user["role"]))
+        st.markdown("---")
+        if st.button("Reload Models"):
+            load_face_detector.clear()
+            load_recognizer.clear()
+            load_liveness_detector.clear()
+            st.success("Model caches cleared.")
+        if st.button("Logout"):
+            logout()
 
     if page == "Dashboard":
-        render_dashboard()
-    elif page == "Enroll Student":
-        render_enrollment()
-    elif page == "Mark Attendance":
-        render_attendance()
+        render_dashboard(user)
+    elif page == "Users":
+        render_user_management(user)
+    elif page == "Academic Setup":
+        render_academic_setup(user)
     elif page == "Students":
-        render_students()
-    elif page == "Liveness Setup":
-        render_liveness_setup()
+        render_students(user)
+    elif page == "Sessions":
+        render_sessions(user)
+    elif page == "Attendance":
+        render_attendance(user)
+    elif page == "Exceptions":
+        render_exceptions(user)
     elif page == "Reports":
-        render_reports()
+        render_reports(user)
+    elif page == "Liveness Ops":
+        render_liveness_ops(user)
+    elif page == "Security":
+        render_security_ops(user)
 
 
 if __name__ == "__main__":

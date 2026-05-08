@@ -5,6 +5,7 @@ import numpy as np
 
 from src.config import FACE_LABELS_PATH, FACE_MATCHER_THRESHOLD, FACE_MODEL_PATH, IMAGE_SIZE, RECOGNITION_CONFIDENCE_THRESHOLD, UNKNOWN_LABEL
 from src.database import list_face_samples
+from src.storage import get_storage_backend
 from src.utils import list_image_files, load_json, resize_and_normalize
 
 
@@ -41,24 +42,36 @@ class FaceRecognizer:
 
         self.fallback_prototypes.clear()
         face_samples = list_face_samples()
-        grouped_paths: dict[str, list[str]] = {}
+        storage_backend = get_storage_backend()
+        grouped_samples: dict[str, list[dict]] = {}
 
         for sample in face_samples:
-            grouped_paths.setdefault(sample["face_label"], []).append(sample["image_path"])
+            grouped_samples.setdefault(sample["face_label"], []).append(sample)
 
-        if grouped_paths:
-            items = sorted(grouped_paths.items())
+        if grouped_samples:
+            items = sorted(grouped_samples.items())
         else:
             if not FACES_DIR.exists():
                 return
-            items = [(label_dir.name, [str(path) for path in list_image_files(label_dir)]) for label_dir in sorted(path for path in FACES_DIR.iterdir() if path.is_dir())]
+            items = [
+                (
+                    label_dir.name,
+                    [{"image_path": str(path), "storage_uri": None} for path in list_image_files(label_dir)],
+                )
+                for label_dir in sorted(path for path in FACES_DIR.iterdir() if path.is_dir())
+            ]
 
-        for label_name, image_paths in items:
+        for label_name, samples in items:
             vectors: list[np.ndarray] = []
-            for image_path in image_paths:
-                import cv2
+            for sample in samples:
+                image = None
+                storage_uri = sample.get("storage_uri")
+                if storage_uri:
+                    image = storage_backend.load_image(storage_uri)
+                if image is None:
+                    import cv2
 
-                image = cv2.imread(str(image_path))
+                    image = cv2.imread(str(sample["image_path"]))
                 if image is None:
                     continue
                 normalized = resize_and_normalize(image, IMAGE_SIZE).flatten()

@@ -1,0 +1,56 @@
+name: Deploy Hugging Face Space
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check deployment secrets
+        id: check
+        run: |
+          if [ -z "${HF_TOKEN}" ] || [ -z "${HF_SPACE_ID}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Skip when Hugging Face deployment is not configured
+        if: steps.check.outputs.configured != 'true'
+        run: echo "HF_TOKEN or HF_SPACE_ID is not configured; skipping Space deployment."
+
+      - name: Prepare Space bundle
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          mkdir -p /tmp/hf-space
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            ./ /tmp/hf-space/
+          cp deploy/huggingface/SPACE_README.md /tmp/hf-space/README.md
+
+      - name: Push to Hugging Face Space
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          cd /tmp/hf-space
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git branch -M main
+          git remote add origin "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_ID}"
+          git push --force origin main

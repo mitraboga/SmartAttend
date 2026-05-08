@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile sources
+        run: python -m compileall app.py src tests
+
+      - name: Run SQLite test suite
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Run SQLite migration upgrade
+        run: python -m src.migrations upgrade
+
+      - name: Print SQLite migration status
+        run: python -m src.migrations current
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: smartattend
+          POSTGRES_USER: smartattend
+          POSTGRES_PASSWORD: smartattend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smartattend -d smartattend"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Postgres migration upgrade
+        env:
+          SMARTATTEND_DATABASE_URL: postgresql://smartattend:smartattend@localhost:5432/smartattend
+        run: python -m src.migrations upgrade
+
+      - name: Run Postgres smoke test
+        env:
+          SMARTATTEND_DATABASE_URL: postgresql://smartattend:smartattend@localhost:5432/smartattend
+        run: python -m unittest discover -s tests -p "test_postgres_backend.py" -v
+
+      - name: Print Postgres migration history
+        env:
+          SMARTATTEND_DATABASE_URL: postgresql://smartattend:smartattend@localhost:5432/smartattend
+        run: python -m src.migrations history
