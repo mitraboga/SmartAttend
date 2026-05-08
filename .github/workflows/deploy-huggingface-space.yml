@@ -17,7 +17,7 @@ jobs:
       HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check deployment secrets
         id: check
@@ -43,17 +43,21 @@ jobs:
           rsync -av --delete \
             --exclude '.git' \
             --exclude '.github' \
+            --exclude '.venv' \
+            --exclude 'artifacts/test_tmp' \
+            --exclude 'DL - Case Study - PPT.pdf' \
             ./ /tmp/hf-space/
           cp deploy/huggingface/SPACE_README.md /tmp/hf-space/README.md
 
-      - name: Push to Hugging Face Space
+      - name: Install Hugging Face CLI
         if: steps.check.outputs.configured == 'true'
         run: |
-          cd /tmp/hf-space
-          git init -b main
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Deploy ${GITHUB_SHA}"
-          git remote add origin "https://oauth2:${{ steps.check.outputs.hf_token }}@huggingface.co/spaces/${{ steps.check.outputs.hf_space_id }}"
-          git push --force origin main
+          python -m pip install --upgrade pip
+          pip install --upgrade huggingface_hub
+
+      - name: Upload Space bundle with hf CLI
+        if: steps.check.outputs.configured == 'true'
+        env:
+          HF_TOKEN: ${{ steps.check.outputs.hf_token }}
+        run: |
+          hf upload "${{ steps.check.outputs.hf_space_id }}" /tmp/hf-space . --repo-type space --delete="*" --commit-message "Deploy ${GITHUB_SHA}"
