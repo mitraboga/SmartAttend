@@ -450,6 +450,255 @@ def inject_styles() -> None:
                 max-width: 100%;
             }
         }
+        .auth-left {
+            position: relative;
+            padding: 3rem;
+            background: linear-gradient(135deg, #004c4c 0%, #006666 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            min-height: 43rem;
+        }
+        .auth-left::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+              radial-gradient(circle at top right, rgba(162, 240, 239, 0.18), transparent 28%),
+              radial-gradient(circle at bottom left, rgba(255,255,255,0.12), transparent 24%);
+            pointer-events: none;
+        }
+        .auth-left-inner,
+        .auth-left-footer,
+        .auth-right-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .auth-left-title {
+            margin: 0 0 0.4rem;
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1.05;
+        }
+        .auth-left-rule {
+            width: 56px;
+            height: 4px;
+            border-radius: 999px;
+            background: #a2f0ef;
+        }
+        .auth-kicker {
+            margin: 0 0 1rem;
+            font-size: 0.74rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: rgba(203, 231, 245, 0.7);
+        }
+        .auth-headline {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.08;
+            color: white;
+            max-width: 14ch;
+        }
+        .auth-copy {
+            margin: 1.25rem 0 0;
+            max-width: 34rem;
+            font-size: 1.05rem;
+            line-height: 1.75;
+            color: rgba(203, 231, 245, 0.82);
+        }
+        .auth-feature-grid {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        .auth-feature {
+            padding: 1.25rem;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+        }
+        .auth-feature-icon {
+            width: 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 0.8rem;
+        }
+        .auth-feature h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+        }
+        .auth-feature p {
+            margin: 0.55rem 0 0;
+            font-size: 0.92rem;
+            line-height: 1.6;
+            color: rgba(203, 231, 245, 0.74);
+        }
+        .auth-left-footer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(203, 231, 245, 0.44);
+        }
+        .auth-right {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2rem 0 0;
+        }
+        .auth-right-inner {
+            width: 100%;
+            max-width: 27rem;
+        }
+        .auth-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .auth-brand-main {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .auth-logo-tile {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: #006666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 24px 48px -12px rgba(25, 28, 29, 0.08);
+        }
+        .auth-logo-tile img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            display: block;
+        }
+        .auth-small-tag {
+            font-size: 0.74rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #004c4c;
+        }
+        .auth-right-title {
+            margin: 0.2rem 0 0;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #191c1d;
+            line-height: 1.08;
+        }
+        .auth-back-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.65rem 1rem;
+            border-radius: 14px;
+            border: 1px solid rgba(0, 76, 76, 0.1);
+            background: white;
+            color: #004c4c;
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .auth-form-copy {
+            margin: 0 0 1.5rem;
+            font-size: 0.96rem;
+            line-height: 1.7;
+            color: #3f4948;
+        }
+        .auth-form-anchor {
+            display: none;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) {
+            max-width: 27rem;
+            padding: 1rem 1rem 0.4rem;
+            border-radius: 18px;
+            background: rgba(247, 238, 226, 0.7);
+            border: 1px solid rgba(17, 42, 53, 0.08);
+            box-shadow: none;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) form {
+            gap: 0;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) .stTextInput label {
+            color: #31424d;
+            font-weight: 600;
+            font-size: 0.72rem;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) .stTextInput input {
+            background: #ffffff;
+            border: 1px solid rgba(17, 42, 53, 0.12);
+            border-radius: 10px;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) .stFormSubmitButton > button {
+            width: 100%;
+            min-height: 2.55rem;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #31424d;
+            border: 1px solid rgba(17, 42, 53, 0.12);
+            box-shadow: none;
+            font-weight: 700;
+        }
+        div[data-testid="stForm"]:has(.auth-form-anchor) .stFormSubmitButton > button:hover {
+            background: #f9fbfc;
+            color: #191c1d;
+        }
+        .auth-footnote {
+            margin-top: 0.75rem;
+            font-size: 0.78rem;
+            line-height: 1.55;
+            color: #7e888e;
+            max-width: 27rem;
+        }
+        .auth-footnote code {
+            color: #0f6b68;
+            background: rgba(15, 107, 104, 0.08);
+            border-radius: 6px;
+            padding: 0.08rem 0.32rem;
+        }
+        @media (max-width: 900px) {
+            .auth-left {
+                min-height: auto;
+                padding: 2rem;
+            }
+            .auth-headline {
+                font-size: 2.2rem;
+                max-width: none;
+            }
+            .auth-feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .auth-right {
+                padding-top: 1.25rem;
+            }
+            .auth-right-inner,
+            div[data-testid="stForm"]:has(.auth-form-anchor),
+            .auth-footnote {
+                max-width: 100%;
+            }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -544,80 +793,105 @@ def render_login_page() -> None:
     if st.session_state.pop("auth_expired", False):
         st.warning("Your session expired. Sign in again.")
 
-    logo_html = ""
-    if LOGO_PATH.exists():
-        import base64
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"], [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+        .block-container {
+            max-width: 1320px;
+            padding-top: 1rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        logo_html = f'<img src="data:image/png;base64,{base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")}" class="login-form-brand-logo" alt="logo" />'
+    left_col, right_col = st.columns([1.08, 0.92], gap="large")
 
-    _pad_left, left, _gutter, right, _pad_right = st.columns([0.045, 0.43, 0.045, 0.33, 0.15], gap="small")
-    with left:
+    with left_col:
         st.markdown(
-            f"""
-            <div class="login-shell">
-              <div class="login-brand-panel">
-                <div class="login-brand-inner">
-                  <div class="login-brand-title">My-GITAM</div>
-                  <div class="login-brand-divider"></div>
-                  <div class="login-brand-eyebrow">Administration Console</div>
-                  <div class="login-brand-subeyebrow">Access your</div>
-                  <div class="login-brand-highlight">SmartAttend operations workspace.</div>
-                  <div class="login-brand-copy">
+            """
+            <div class="auth-left">
+              <div class="auth-left-inner">
+                <h1 class="auth-left-title">My-GITAM</h1>
+                <div class="auth-left-rule"></div>
+                <div style="margin-top: 4rem;">
+                  <p class="auth-kicker">Administration Console</p>
+                  <h2 class="auth-headline">Access your SmartAttend operations workspace.</h2>
+                  <p class="auth-copy">
                     Sign in once as administrator to manage student enrollment, attendance verification,
                     liveness protection, reporting, and spoof-attempt auditing from a single academic dashboard.
-                  </div>
-                  <div class="login-feature-grid">
-                    <div class="login-feature-card">
-                      <div class="login-feature-icon">ID</div>
-                      <div class="login-feature-title">Identity First</div>
-                      <div class="login-feature-copy">Admin access controls the full attendance workflow before students are processed.</div>
+                  </p>
+                  <div class="auth-feature-grid">
+                    <div class="auth-feature">
+                      <div class="auth-feature-icon">ID</div>
+                      <h3>Identity First</h3>
+                      <p>Admin access controls the full attendance workflow before students are processed.</p>
                     </div>
-                    <div class="login-feature-card">
-                      <div class="login-feature-icon">DB</div>
-                      <div class="login-feature-title">Database Ready</div>
-                      <div class="login-feature-copy">Managed Postgres, audit logs, and secure object storage keep operations durable.</div>
+                    <div class="auth-feature">
+                      <div class="auth-feature-icon">DB</div>
+                      <h3>Database Ready</h3>
+                      <p>Managed Postgres, audit logs, and secure object storage keep operations durable.</p>
                     </div>
                   </div>
                 </div>
               </div>
+              <div class="auth-left-footer">Academic Management Portal © 2026 GITAM University</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    with right:
-        st.markdown('<div class="login-form-frame"></div>', unsafe_allow_html=True)
-        with st.form("login_form", border=False):
-            st.markdown(
-                f"""
-                <div class="login-form-anchor"></div>
-                <div class="login-form-top">
-                  <div class="login-form-brand">
-                    {logo_html}
+
+    with right_col:
+        logo_html = ""
+        if LOGO_PATH.exists():
+            import base64
+
+            logo_base64 = base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" alt="University Logo" />'
+
+        st.markdown(
+            f"""
+            <div class="auth-right">
+              <div class="auth-right-inner">
+                <div class="auth-brand-row">
+                  <div class="auth-brand-main">
+                    <div class="auth-logo-tile">{logo_html}</div>
                     <div>
-                      <div class="login-form-eyebrow">G-Learn Administration</div>
-                      <div class="login-form-title">Admin Login</div>
+                      <div class="auth-small-tag">G-Learn Administration</div>
+                      <h2 class="auth-right-title">Admin Login</h2>
                     </div>
                   </div>
-                  <div class="login-form-chip">Secure Access</div>
+                  <div class="auth-back-pill">Secure Access</div>
                 </div>
-                <div class="login-form-copy">
-                  Sign in with the {APP_TITLE} administrator credentials to open the dashboard.
+                <p class="auth-form-copy">
+                  Sign in with the SmartAttend administrator credentials to open the dashboard.
                   This replaces the public landing flow and keeps the portal locked until an admin session starts.
-                </div>
-                """,
+                </p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.form("admin_login_form", clear_on_submit=False, border=False):
+            st.markdown(
+                '<div class="auth-form-anchor"></div>',
                 unsafe_allow_html=True,
             )
             username = st.text_input("Admin Username", value=DEFAULT_ADMIN_USERNAME, key="login_username")
             password = st.text_input("Admin Password", type="password", key="login_password")
             submitted = st.form_submit_button("Access Dashboard", use_container_width=True)
+
         st.markdown(
             """
-            <div class="login-footnote">
-              Set <code>SMARTATTEND_ADMIN_USER</code> and <code>SMARTATTEND_ADMIN_PASSWORD</code> in the environment to change the default credentials.
+            <div class="auth-footnote">
+              Set <code>SMARTATTEND_ADMIN_USER</code> and <code>SMARTATTEND_ADMIN_PASSWORD</code> in the environment to change the default admin credentials.
             </div>
             """,
             unsafe_allow_html=True,
         )
+        st.markdown("</div></div>", unsafe_allow_html=True)
         if submitted:
             user, message = authenticate_user(username, password)
             if user is None:
