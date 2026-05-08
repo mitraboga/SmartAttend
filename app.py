@@ -225,22 +225,27 @@ def inject_styles() -> None:
             box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
         }
         .login-shell {
-            padding-top: 0.15rem;
+            padding-top: 0.2rem;
         }
         .login-brand-panel {
-            min-height: calc(100vh - 3.25rem);
+            min-height: calc(100vh - 3.45rem);
             border-radius: 0;
-            padding: 2.35rem 2.65rem;
+            padding: 2.45rem 2.25rem 2.15rem;
             background:
               radial-gradient(circle at top right, rgba(27, 201, 178, 0.18), transparent 24%),
               linear-gradient(180deg, #0a5a5e 0%, #0d5558 50%, #12313d 100%);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
             color: #edf8f6;
+            display: flex;
+            justify-content: center;
+        }
+        .login-brand-inner {
+            width: min(100%, 18rem);
         }
         .login-brand-eyebrow {
             text-transform: uppercase;
             letter-spacing: 0.32em;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             font-weight: 700;
             color: rgba(236, 248, 246, 0.74);
             margin-bottom: 1.65rem;
@@ -261,28 +266,36 @@ def inject_styles() -> None:
         }
         .login-brand-copy {
             color: rgba(236, 248, 246, 0.88);
-            font-size: 0.98rem;
-            line-height: 1.75;
-            max-width: 26rem;
-            margin-bottom: 2.2rem;
+            font-size: 0.89rem;
+            line-height: 1.78;
+            max-width: 15.75rem;
+            margin-bottom: 2rem;
+        }
+        .login-brand-subeyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.28em;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: rgba(236, 248, 246, 0.74);
+            margin-bottom: 1.05rem;
         }
         .login-brand-highlight {
-            max-width: 22rem;
             color: #ffffff;
-            font-size: 1.03rem;
-            line-height: 1.45;
-            font-weight: 700;
-            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.42;
+            font-weight: 800;
+            max-width: 11.2rem;
+            margin-bottom: 1.25rem;
         }
         .login-feature-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 0.9rem;
             margin-top: 2rem;
-            max-width: 28rem;
+            max-width: 100%;
         }
         .login-feature-card {
-            padding: 1rem 1rem 1.05rem;
+            padding: 0.95rem 0.9rem 1rem;
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -302,37 +315,52 @@ def inject_styles() -> None:
         }
         .login-feature-title {
             color: #ffffff;
-            font-size: 0.94rem;
+            font-size: 0.9rem;
             font-weight: 700;
             margin-bottom: 0.45rem;
         }
         .login-feature-copy {
             color: rgba(236, 248, 246, 0.74);
-            font-size: 0.82rem;
+            font-size: 0.79rem;
             line-height: 1.55;
         }
-        .login-form-shell {
-            padding: 0.9rem 0 0;
-            max-width: 34rem;
+        .login-form-frame {
+            max-width: 25.5rem;
+            padding-top: 0.45rem;
         }
-        .login-form-card {
-            padding: 1.25rem 1.45rem 1.15rem;
+        .login-form-anchor {
+            display: none;
+        }
+        div[data-testid="stForm"]:has(.login-form-anchor) {
+            max-width: 25.5rem;
+            padding: 1.2rem 1.2rem 1rem;
             border-radius: 24px;
-            background: rgba(255,255,255,0.92);
+            background: rgba(255,255,255,0.94);
             border: 1px solid rgba(17, 42, 53, 0.08);
             box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
+        }
+        div[data-testid="stForm"]:has(.login-form-anchor) form {
+            gap: 0;
         }
         .login-form-top {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.95rem;
+            margin-bottom: 0.95rem;
         }
         .login-form-brand {
             display: flex;
             align-items: center;
-            gap: 0.9rem;
+            gap: 0.85rem;
+        }
+        .login-form-brand-logo {
+            width: 2.9rem;
+            height: 2.9rem;
+            object-fit: cover;
+            border-radius: 12px;
+            display: block;
+            flex-shrink: 0;
         }
         .login-form-eyebrow {
             text-transform: uppercase;
@@ -344,7 +372,7 @@ def inject_styles() -> None:
         }
         .login-form-title {
             color: #18232b;
-            font-size: 1.85rem;
+            font-size: 1.6rem;
             font-weight: 800;
             margin: 0;
             line-height: 1.1;
@@ -363,21 +391,23 @@ def inject_styles() -> None:
         }
         .login-form-copy {
             color: #6b7780;
-            font-size: 0.92rem;
-            line-height: 1.65;
-            margin-bottom: 1rem;
-        }
-        .login-form-box {
-            padding: 0.9rem 0.95rem 0.35rem;
-            border-radius: 18px;
-            background: rgba(247, 238, 226, 0.7);
-            border: 1px solid rgba(17, 42, 53, 0.08);
+            font-size: 0.84rem;
+            line-height: 1.7;
+            max-width: 21rem;
+            margin-bottom: 0.95rem;
         }
         .login-footnote {
             color: #7e888e;
             font-size: 0.78rem;
             line-height: 1.55;
-            margin-top: 0.85rem;
+            margin-top: 0.65rem;
+            max-width: 25.5rem;
+        }
+        .login-footnote code {
+            color: #0f6b68;
+            background: rgba(15, 107, 104, 0.08);
+            border-radius: 6px;
+            padding: 0.08rem 0.32rem;
         }
         .sidebar-note {
             color: rgba(255,255,255,0.8);
@@ -385,28 +415,40 @@ def inject_styles() -> None:
             line-height: 1.5;
             margin-bottom: 0.9rem;
         }
-        .login-form-shell .stTextInput label {
+        div[data-testid="stForm"]:has(.login-form-anchor) .stTextInput label {
             color: #31424d;
             font-weight: 600;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
         }
-        .login-form-shell .stTextInput input {
+        div[data-testid="stForm"]:has(.login-form-anchor) .stTextInput input {
             background: #ffffff;
             border: 1px solid rgba(17, 42, 53, 0.12);
-            border-radius: 12px;
+            border-radius: 10px;
         }
-        .login-form-shell .stButton > button {
+        div[data-testid="stForm"]:has(.login-form-anchor) .stFormSubmitButton > button {
             width: 100%;
-            min-height: 2.9rem;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #127d78 0%, #0c605f 100%);
-            color: #ffffff;
-            border: none;
+            min-height: 2.45rem;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #27404b;
+            border: 1px solid rgba(17, 42, 53, 0.12);
             font-weight: 700;
+            box-shadow: none;
         }
-        .login-form-shell .stButton > button:hover {
-            background: linear-gradient(135deg, #18968f 0%, #0f7472 100%);
-            color: #ffffff;
+        div[data-testid="stForm"]:has(.login-form-anchor) .stFormSubmitButton > button:hover {
+            background: #f8fbfd;
+            color: #18232b;
+        }
+        @media (max-width: 1100px) {
+            .login-brand-panel {
+                min-height: auto;
+                padding-bottom: 2.2rem;
+            }
+            .login-brand-inner,
+            div[data-testid="stForm"]:has(.login-form-anchor),
+            .login-footnote {
+                max-width: 100%;
+            }
         }
         </style>
         """,
@@ -502,31 +544,39 @@ def render_login_page() -> None:
     if st.session_state.pop("auth_expired", False):
         st.warning("Your session expired. Sign in again.")
 
-    left, right = st.columns([1.0, 0.78], gap="large")
+    logo_html = ""
+    if LOGO_PATH.exists():
+        import base64
+
+        logo_html = f'<img src="data:image/png;base64,{base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")}" class="login-form-brand-logo" alt="logo" />'
+
+    _pad_left, left, _gutter, right, _pad_right = st.columns([0.045, 0.43, 0.045, 0.33, 0.15], gap="small")
     with left:
         st.markdown(
             f"""
             <div class="login-shell">
               <div class="login-brand-panel">
-                <div class="login-brand-eyebrow">Administration Console</div>
-                <div class="login-brand-title">My-GITAM</div>
-                <div class="login-brand-divider"></div>
-                <div class="login-brand-eyebrow">Access your</div>
-                <div class="login-brand-highlight">SmartAttend operations workspace.</div>
-                <div class="login-brand-copy">
-                  Sign in once as administrator to manage student enrollment, attendance verification,
-                  liveness protection, reporting, and spoof-attempt auditing from a single academic dashboard.
-                </div>
-                <div class="login-feature-grid">
-                  <div class="login-feature-card">
-                    <div class="login-feature-icon">ID</div>
-                    <div class="login-feature-title">Identity First</div>
-                    <div class="login-feature-copy">Admin access controls the full attendance workflow before students are processed.</div>
+                <div class="login-brand-inner">
+                  <div class="login-brand-title">My-GITAM</div>
+                  <div class="login-brand-divider"></div>
+                  <div class="login-brand-eyebrow">Administration Console</div>
+                  <div class="login-brand-subeyebrow">Access your</div>
+                  <div class="login-brand-highlight">SmartAttend operations workspace.</div>
+                  <div class="login-brand-copy">
+                    Sign in once as administrator to manage student enrollment, attendance verification,
+                    liveness protection, reporting, and spoof-attempt auditing from a single academic dashboard.
                   </div>
-                  <div class="login-feature-card">
-                    <div class="login-feature-icon">DB</div>
-                    <div class="login-feature-title">Database Ready</div>
-                    <div class="login-feature-copy">Managed Postgres, audit logs, and secure object storage keep operations durable.</div>
+                  <div class="login-feature-grid">
+                    <div class="login-feature-card">
+                      <div class="login-feature-icon">ID</div>
+                      <div class="login-feature-title">Identity First</div>
+                      <div class="login-feature-copy">Admin access controls the full attendance workflow before students are processed.</div>
+                    </div>
+                    <div class="login-feature-card">
+                      <div class="login-feature-icon">DB</div>
+                      <div class="login-feature-title">Database Ready</div>
+                      <div class="login-feature-copy">Managed Postgres, audit logs, and secure object storage keep operations durable.</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -535,13 +585,14 @@ def render_login_page() -> None:
             unsafe_allow_html=True,
         )
     with right:
-        st.markdown('<div style="padding-top: 0.65rem;"></div>', unsafe_allow_html=True)
-        st.markdown(
-            f"""
-            <div class="login-form-shell">
-              <div class="login-form-card">
+        st.markdown('<div class="login-form-frame"></div>', unsafe_allow_html=True)
+        with st.form("login_form", border=False):
+            st.markdown(
+                f"""
+                <div class="login-form-anchor"></div>
                 <div class="login-form-top">
                   <div class="login-form-brand">
+                    {logo_html}
                     <div>
                       <div class="login-form-eyebrow">G-Learn Administration</div>
                       <div class="login-form-title">Admin Login</div>
@@ -553,13 +604,21 @@ def render_login_page() -> None:
                   Sign in with the {APP_TITLE} administrator credentials to open the dashboard.
                   This replaces the public landing flow and keeps the portal locked until an admin session starts.
                 </div>
-                <div class="login-form-box">
+                """,
+                unsafe_allow_html=True,
+            )
+            username = st.text_input("Admin Username", value=DEFAULT_ADMIN_USERNAME, key="login_username")
+            password = st.text_input("Admin Password", type="password", key="login_password")
+            submitted = st.form_submit_button("Access Dashboard", use_container_width=True)
+        st.markdown(
+            """
+            <div class="login-footnote">
+              Set <code>SMARTATTEND_ADMIN_USER</code> and <code>SMARTATTEND_ADMIN_PASSWORD</code> in the environment to change the default credentials.
+            </div>
             """,
             unsafe_allow_html=True,
         )
-        username = st.text_input("Username", value=DEFAULT_ADMIN_USERNAME, key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
-        if st.button("Access Dashboard", type="primary", use_container_width=True):
+        if submitted:
             user, message = authenticate_user(username, password)
             if user is None:
                 st.error(message)
@@ -567,17 +626,6 @@ def render_login_page() -> None:
                 set_authenticated_user(user)
                 st.success(message)
                 st.rerun()
-        st.markdown(
-            f"""
-                </div>
-                <div class="login-footnote">
-                  Set <code>SMARTATTEND_ADMIN_USER</code> and <code>SMARTATTEND_ADMIN_PASSWORD</code> in the environment to change the default credentials.
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 
 # PAGE_RENDERERS
