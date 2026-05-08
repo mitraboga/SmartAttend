@@ -1227,37 +1227,64 @@ def get_student_by_label(face_label: str) -> dict | None:
 
 
 def list_students(*, user: dict | None = None, offering_id: int | None = None, section_id: int | None = None) -> list[dict]:
-    query = """
+    attendance_summary = """
         SELECT
-            st.*,
-            sec.name AS section_name,
-            sec.year_label AS section_year_label,
-            p.name AS program_name,
+            ar.student_id,
             COUNT(ar.id) AS attendance_events,
             COALESCE(SUM(CASE WHEN ar.status = 'Present' THEN 1 ELSE 0 END), 0) AS present_count,
             COALESCE(SUM(CASE WHEN ar.status = 'Absent' THEN 1 ELSE 0 END), 0) AS absent_count,
             COALESCE(SUM(CASE WHEN ar.status = 'Late' THEN 1 ELSE 0 END), 0) AS late_count,
             COALESCE(SUM(CASE WHEN ar.status = 'Excused' THEN 1 ELSE 0 END), 0) AS excused_count
+        FROM attendance_records ar
+        INNER JOIN class_sessions cs ON cs.id = ar.session_id
+        INNER JOIN course_offerings co ON co.id = cs.offering_id
+    """
+    attendance_clauses: list[str] = []
+    attendance_params: list[Any] = []
+    outer_clauses: list[str] = ["st.active = 1"]
+    outer_params: list[Any] = []
+
+    if user and user.get("role") == "faculty":
+        attendance_clauses.append("co.faculty_user_id = ?")
+        attendance_params.append(user["id"])
+        outer_clauses.append(
+            "EXISTS (SELECT 1 FROM course_offerings co_scope WHERE co_scope.section_id = st.section_id AND co_scope.faculty_user_id = ?)"
+        )
+        outer_params.append(user["id"])
+    if offering_id is not None:
+        attendance_clauses.append("co.id = ?")
+        attendance_params.append(offering_id)
+        outer_clauses.append(
+            "EXISTS (SELECT 1 FROM course_offerings co_scope WHERE co_scope.id = ? AND co_scope.section_id = st.section_id)"
+        )
+        outer_params.append(offering_id)
+    if section_id is not None:
+        outer_clauses.append("st.section_id = ?")
+        outer_params.append(section_id)
+
+    if attendance_clauses:
+        attendance_summary += " WHERE " + " AND ".join(attendance_clauses)
+    attendance_summary += " GROUP BY ar.student_id"
+
+    query = f"""
+        SELECT
+            st.*,
+            sec.name AS section_name,
+            sec.year_label AS section_year_label,
+            p.name AS program_name,
+            COALESCE(stats.attendance_events, 0) AS attendance_events,
+            COALESCE(stats.present_count, 0) AS present_count,
+            COALESCE(stats.absent_count, 0) AS absent_count,
+            COALESCE(stats.late_count, 0) AS late_count,
+            COALESCE(stats.excused_count, 0) AS excused_count
         FROM students st
         LEFT JOIN sections sec ON sec.id = st.section_id
         LEFT JOIN programs p ON p.id = sec.program_id
-        LEFT JOIN course_offerings co ON co.section_id = st.section_id
-        LEFT JOIN class_sessions cs ON cs.offering_id = co.id
-        LEFT JOIN attendance_records ar ON ar.session_id = cs.id AND ar.student_id = st.id
+        LEFT JOIN ({attendance_summary}) stats ON stats.student_id = st.id
+        WHERE {" AND ".join(outer_clauses)}
+        ORDER BY st.first_name, st.last_name
     """
-    clauses: list[str] = ["st.active = 1"]
-    parameters: list[Any] = []
-    if user and user.get("role") == "faculty":
-        clauses.append("co.faculty_user_id = ?")
-        parameters.append(user["id"])
-    if offering_id is not None:
-        clauses.append("co.id = ?")
-        parameters.append(offering_id)
-    if section_id is not None:
-        clauses.append("st.section_id = ?")
-        parameters.append(section_id)
-    query += " WHERE " + " AND ".join(clauses)
-    query += " GROUP BY st.id ORDER BY st.first_name, st.last_name"
+    parameters = [*attendance_params, *outer_params]
     with get_connection() as connection:
         rows = connection.execute(query, parameters).fetchall()
     students: list[dict] = []
