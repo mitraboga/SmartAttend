@@ -225,12 +225,12 @@ def inject_styles() -> None:
             box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
         }
         .login-shell {
-            padding-top: 0.35rem;
+            padding-top: 0.15rem;
         }
         .login-brand-panel {
-            min-height: 43rem;
+            min-height: calc(100vh - 3.25rem);
             border-radius: 0;
-            padding: 2.5rem 2.9rem;
+            padding: 2.35rem 2.65rem;
             background:
               radial-gradient(circle at top right, rgba(27, 201, 178, 0.18), transparent 24%),
               linear-gradient(180deg, #0a5a5e 0%, #0d5558 50%, #12313d 100%);
@@ -278,7 +278,7 @@ def inject_styles() -> None:
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            margin-top: 2.2rem;
+            margin-top: 2rem;
             max-width: 28rem;
         }
         .login-feature-card {
@@ -312,10 +312,11 @@ def inject_styles() -> None:
             line-height: 1.55;
         }
         .login-form-shell {
-            padding: 1.2rem 0.4rem 0;
+            padding: 0.9rem 0 0;
+            max-width: 34rem;
         }
         .login-form-card {
-            padding: 1.4rem 1.55rem 1.25rem;
+            padding: 1.25rem 1.45rem 1.15rem;
             border-radius: 24px;
             background: rgba(255,255,255,0.92);
             border: 1px solid rgba(17, 42, 53, 0.08);
@@ -362,12 +363,12 @@ def inject_styles() -> None:
         }
         .login-form-copy {
             color: #6b7780;
-            font-size: 0.95rem;
-            line-height: 1.7;
-            margin-bottom: 1.15rem;
+            font-size: 0.92rem;
+            line-height: 1.65;
+            margin-bottom: 1rem;
         }
         .login-form-box {
-            padding: 1rem 1rem 0.4rem;
+            padding: 0.9rem 0.95rem 0.35rem;
             border-radius: 18px;
             background: rgba(247, 238, 226, 0.7);
             border: 1px solid rgba(17, 42, 53, 0.08);
@@ -387,6 +388,7 @@ def inject_styles() -> None:
         .login-form-shell .stTextInput label {
             color: #31424d;
             font-weight: 600;
+            font-size: 0.78rem;
         }
         .login-form-shell .stTextInput input {
             background: #ffffff;
@@ -500,7 +502,7 @@ def render_login_page() -> None:
     if st.session_state.pop("auth_expired", False):
         st.warning("Your session expired. Sign in again.")
 
-    left, right = st.columns([0.82, 1.18], gap="large")
+    left, right = st.columns([1.0, 0.78], gap="large")
     with left:
         st.markdown(
             f"""
@@ -533,6 +535,7 @@ def render_login_page() -> None:
             unsafe_allow_html=True,
         )
     with right:
+        st.markdown('<div style="padding-top: 0.65rem;"></div>', unsafe_allow_html=True)
         st.markdown(
             f"""
             <div class="login-form-shell">
