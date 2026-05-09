@@ -207,21 +207,43 @@ The app supports:
 
 ### Liveness Detection Model
 
+Current local evaluation snapshot:
+
+- Evaluation set: `35` liveness samples
+- Class split: `15 fake`, `20 real`
+- Recalibrated operating threshold: `0.4947`
+- Previous threshold before ROC calibration: `0.3000`
+
 | Metric | Value |
 |--------|-------|
-| Accuracy | Replace with actual value |
-| Precision | Replace with actual value |
-| Recall | Replace with actual value |
-| F1 Score | Replace with actual value |
-| ROC-AUC | Replace with actual value |
+| Accuracy | `1.0000` |
+| Precision | `1.0000` |
+| Recall | `1.0000` |
+| F1 Score | `1.0000` |
+| ROC-AUC | `1.0000` |
+| False Acceptance Rate | `0.0000` |
+| False Rejection Rate | `0.0000` |
 
 <p align="center">
-  <a href="artifacts/evaluation/roc_curve.png">
-    <img src="artifacts/evaluation/roc_curve.png" width="85%" alt="SmartAttend ROC Curve"/>
+  <a href="assets/liveness_roc_curve.png">
+    <img src="assets/liveness_roc_curve.png" width="85%" alt="SmartAttend ROC Curve"/>
   </a>
 </p>
 
-<p align="center"><i>ROC curve for the liveness detection model. Replace with the real generated output from your evaluation pipeline.</i></p>
+<p align="center"><i>ROC curve for the current local liveness model after threshold recalibration.</i></p>
+
+<p align="center">
+  <a href="assets/liveness_confusion_matrix.png">
+    <img src="assets/liveness_confusion_matrix.png" width="78%" alt="SmartAttend Liveness Confusion Matrix"/>
+  </a>
+</p>
+
+<p align="center"><i>Submission-ready confusion matrix generated from the same evaluation run. Each cell shows count and row-normalized percentage.</i></p>
+
+Notes:
+
+- These results are from the current local liveness dataset and are optimistic because the evaluation set is small.
+- The threshold was recalibrated from the ROC curve to correct the earlier overly permissive operating point.
 
 ---
 

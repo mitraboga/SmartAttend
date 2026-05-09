@@ -15,8 +15,26 @@ import matplotlib.pyplot as plt
 
 
 def _plot_confusion_matrix(matrix: np.ndarray, labels: list[str], title: str, output_path: Path) -> None:
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(matrix, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+    matrix = np.asarray(matrix)
+    row_totals = matrix.sum(axis=1, keepdims=True)
+    normalized = np.divide(matrix, row_totals, out=np.zeros_like(matrix, dtype=float), where=row_totals != 0)
+    annotations = np.empty_like(matrix, dtype=object)
+    for row_index in range(matrix.shape[0]):
+        for col_index in range(matrix.shape[1]):
+            annotations[row_index, col_index] = f"{matrix[row_index, col_index]}\n{normalized[row_index, col_index] * 100:.1f}%"
+
+    plt.figure(figsize=(8.4, 6.4))
+    sns.heatmap(
+        normalized,
+        annot=annotations,
+        fmt="",
+        cmap="Blues",
+        vmin=0.0,
+        vmax=1.0,
+        cbar_kws={"label": "Row-normalized proportion"},
+        xticklabels=[label.title() for label in labels],
+        yticklabels=[label.title() for label in labels],
+    )
     plt.title(title)
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
@@ -33,7 +51,7 @@ def _plot_roc_curve(
     *,
     operating_point: tuple[float, float] | None = None,
 ) -> None:
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8.4, 6.4))
     plt.plot(fpr, tpr, color="#0f766e", linewidth=2.2, label=f"ROC curve (AUC = {roc_auc:.4f})")
     plt.plot([0, 1], [0, 1], color="#94a3b8", linestyle="--", linewidth=1.4, label="Random baseline")
     if operating_point is not None:
@@ -55,6 +73,33 @@ def _plot_roc_curve(
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+
+
+def _select_operating_threshold(
+    fpr: np.ndarray,
+    tpr: np.ndarray,
+    thresholds: np.ndarray,
+    default_threshold: float,
+) -> tuple[float, tuple[float, float]]:
+    finite_mask = np.isfinite(thresholds)
+    if not np.any(finite_mask):
+        return default_threshold, (0.0, 0.0)
+
+    candidate_fpr = fpr[finite_mask]
+    candidate_tpr = tpr[finite_mask]
+    candidate_thresholds = thresholds[finite_mask]
+    scores = candidate_tpr - candidate_fpr
+    best_score = float(np.max(scores))
+    best_indices = np.where(np.isclose(scores, best_score))[0]
+
+    chosen_index = int(best_indices[0])
+    if len(best_indices) > 1:
+        best_thresholds = candidate_thresholds[best_indices]
+        chosen_index = int(best_indices[np.argmax(best_thresholds)])
+
+    chosen_threshold = float(candidate_thresholds[chosen_index])
+    chosen_point = (float(candidate_fpr[chosen_index]), float(candidate_tpr[chosen_index]))
+    return chosen_threshold, chosen_point
 
 
 def _load_labeled_images(root_dir: Path, class_names: list[str]) -> tuple[np.ndarray, np.ndarray]:
@@ -116,10 +161,12 @@ def evaluate_liveness_model() -> dict:
     model = tf.keras.models.load_model(LIVENESS_MODEL_PATH)
     metadata = load_json(LIVENESS_METADATA_PATH, default={})
     class_names = list(metadata.get("class_names", [])) or sorted(path.name for path in LIVENESS_DIR.iterdir() if path.is_dir())
-    threshold = float(metadata.get("threshold", 0.5))
+    original_threshold = float(metadata.get("threshold", 0.5))
     images, y_true = _load_labeled_images(LIVENESS_DIR, class_names)
 
     scores = model.predict(images, verbose=0).flatten()
+    fpr, tpr, thresholds = roc_curve(y_true, scores)
+    threshold, operating_point = _select_operating_threshold(fpr, tpr, thresholds, original_threshold)
     y_pred = (scores >= threshold).astype(int)
 
     matrix = confusion_matrix(y_true, y_pred, labels=[0, 1])
@@ -127,11 +174,13 @@ def evaluate_liveness_model() -> dict:
     tn, fp, fn, tp = matrix.ravel()
     far = float(fp / (fp + tn)) if (fp + tn) else 0.0
     frr = float(fn / (fn + tp)) if (fn + tp) else 0.0
-    fpr, tpr, thresholds = roc_curve(y_true, scores)
     roc_auc = float(auc(fpr, tpr))
-    operating_index = int(np.argmin(np.abs(thresholds - threshold)))
-    operating_point = (float(fpr[operating_index]), float(tpr[operating_index]))
     evaluation_dir = ARTIFACTS_DIR / "evaluation"
+    metadata["threshold"] = threshold
+    metadata["threshold_accuracy"] = float(accuracy_score(y_true, y_pred))
+    metadata["recalibrated_from_threshold"] = original_threshold
+    metadata["roc_auc"] = roc_auc
+    save_json(LIVENESS_METADATA_PATH, metadata)
 
     payload = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
@@ -141,6 +190,7 @@ def evaluate_liveness_model() -> dict:
         "false_acceptance_rate": far,
         "false_rejection_rate": frr,
         "threshold": threshold,
+        "original_threshold": original_threshold,
         "roc_auc": roc_auc,
         "roc_curve": {
             "false_positive_rate": fpr.tolist(),
@@ -155,6 +205,7 @@ def evaluate_liveness_model() -> dict:
 
     ensure_directories(ARTIFACTS_DIR, evaluation_dir)
     _plot_confusion_matrix(matrix, class_names, "Liveness Confusion Matrix", ARTIFACTS_DIR / "liveness_confusion_matrix.png")
+    _plot_confusion_matrix(matrix, class_names, "Liveness Confusion Matrix", evaluation_dir / "liveness_confusion_matrix.png")
     _plot_roc_curve(fpr, tpr, roc_auc, evaluation_dir / "roc_curve.png", operating_point=operating_point)
     save_json(ARTIFACTS_DIR / "liveness_metrics.json", payload)
     save_evaluation_report("liveness_model", payload)
