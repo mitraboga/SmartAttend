@@ -565,7 +565,7 @@ def inject_styles() -> None:
         }
         .auth-right-inner {
             width: 100%;
-            max-width: 27rem;
+            max-width: 30rem;
         }
         .auth-header-card {
             width: 100%;
@@ -588,6 +588,8 @@ def inject_styles() -> None:
             display: flex;
             align-items: center;
             gap: 1rem;
+            min-width: 0;
+            flex: 1 1 auto;
         }
         .auth-logo-tile {
             width: 64px;
@@ -614,10 +616,11 @@ def inject_styles() -> None:
         }
         .auth-right-title {
             margin: 0.2rem 0 0;
-            font-size: 2rem;
+            font-size: 1.9rem;
             font-weight: 800;
             color: #191c1d;
             line-height: 1.08;
+            white-space: nowrap;
         }
         .auth-back-pill {
             display: inline-flex;
@@ -645,7 +648,7 @@ def inject_styles() -> None:
         }
         div[data-testid="stForm"]:has(.auth-form-anchor) {
             width: 100%;
-            max-width: 27rem;
+            max-width: none;
             padding: 1rem 1rem 0.4rem;
             border-radius: 18px;
             background: rgba(247, 238, 226, 0.7);
@@ -685,7 +688,7 @@ def inject_styles() -> None:
             font-size: 0.78rem;
             line-height: 1.55;
             color: #7e888e;
-            max-width: 27rem;
+            max-width: none;
         }
         .auth-footnote code {
             color: #0f6b68;
