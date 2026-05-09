@@ -567,6 +567,16 @@ def inject_styles() -> None:
             width: 100%;
             max-width: 27rem;
         }
+        .auth-header-card {
+            width: 100%;
+            padding: 1.35rem 1.45rem 1.2rem;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid rgba(17, 42, 53, 0.08);
+            box-shadow: 0 18px 40px rgba(17, 42, 53, 0.08);
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+        }
         .auth-brand-row {
             display: flex;
             align-items: center;
@@ -627,16 +637,21 @@ def inject_styles() -> None:
             line-height: 1.7;
             color: #3f4948;
         }
+        .auth-form-shell {
+            width: 100%;
+        }
         .auth-form-anchor {
             display: none;
         }
         div[data-testid="stForm"]:has(.auth-form-anchor) {
+            width: 100%;
             max-width: 27rem;
             padding: 1rem 1rem 0.4rem;
             border-radius: 18px;
             background: rgba(247, 238, 226, 0.7);
             border: 1px solid rgba(17, 42, 53, 0.08);
             box-shadow: none;
+            box-sizing: border-box;
         }
         div[data-testid="stForm"]:has(.auth-form-anchor) form {
             gap: 0;
@@ -856,20 +871,23 @@ def render_login_page() -> None:
             f"""
             <div class="auth-right">
               <div class="auth-right-inner">
-                <div class="auth-brand-row">
-                  <div class="auth-brand-main">
-                    <div class="auth-logo-tile">{logo_html}</div>
-                    <div>
-                      <div class="auth-small-tag">G-Learn Administration</div>
-                      <h2 class="auth-right-title">Admin Login</h2>
+                <div class="auth-header-card">
+                  <div class="auth-brand-row">
+                    <div class="auth-brand-main">
+                      <div class="auth-logo-tile">{logo_html}</div>
+                      <div>
+                        <div class="auth-small-tag">G-Learn Administration</div>
+                        <h2 class="auth-right-title">Admin Login</h2>
+                      </div>
                     </div>
+                    <div class="auth-back-pill">Secure Access</div>
                   </div>
-                  <div class="auth-back-pill">Secure Access</div>
+                  <p class="auth-form-copy">
+                    Sign in with the SmartAttend administrator credentials to open the dashboard.
+                    This replaces the public landing flow and keeps the portal locked until an admin session starts.
+                  </p>
                 </div>
-                <p class="auth-form-copy">
-                  Sign in with the SmartAttend administrator credentials to open the dashboard.
-                  This replaces the public landing flow and keeps the portal locked until an admin session starts.
-                </p>
+                <div class="auth-form-shell">
             """,
             unsafe_allow_html=True,
         )
@@ -891,7 +909,7 @@ def render_login_page() -> None:
             """,
             unsafe_allow_html=True,
         )
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.markdown("</div></div></div>", unsafe_allow_html=True)
         if submitted:
             user, message = authenticate_user(username, password)
             if user is None:
