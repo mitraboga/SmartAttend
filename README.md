@@ -7,7 +7,11 @@
   <img src="https://img.shields.io/badge/TensorFlow-CNN-orange?logo=tensorflow" alt="TensorFlow" />
   <img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-green" alt="OpenCV" />
   <img src="https://img.shields.io/badge/Postgres-Managed%20DB-blue?logo=postgresql" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Neon-Managed%20PostgreSQL-00E599?logo=postgresql" alt="Neon PostgreSQL" />
+  <img src="https://img.shields.io/badge/Hugging%20Face-Spaces-FCC624?logo=huggingface&logoColor=black" alt="Hugging Face Spaces" />
+  <img src="https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=githubactions&logoColor=white" alt="GitHub Actions CI/CD" />
   <img src="https://img.shields.io/badge/S3-Object%20Storage-brightgreen?logo=amazonaws" alt="S3" />
+  <img src="https://img.shields.io/badge/ROC-Curve-8A2BE2" alt="ROC Curve" />
 </p>
 
 ---
