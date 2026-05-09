@@ -113,7 +113,7 @@ Traditional attendance workflows are weak because they often allow:
   </a>
 </p>
 
-<p align="center"><i>This is the current applicable and working SmartAttend architecture: Hugging Face Space hosting, Streamlit application runtime, local model training, Neon PostgreSQL, S3-backed face assets, and the live CNN-based attendance verification pipeline.</i></p>
+<p align="center"><i>This is the current applicable SmartAttend architecture: Hugging Face Space hosting, Streamlit application runtime, local model training, Neon PostgreSQL, S3-backed face assets, and the live CNN-based attendance verification pipeline.</i></p>
 
 ### Full AWS Cloud Architecture Reference
 
