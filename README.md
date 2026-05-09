@@ -631,9 +631,9 @@ This project can grow from a classroom demo into a more production-oriented biom
 
 ## 👥 Authors
 
-<table align="center" width="100%" style="width: 100%; table-layout: fixed;">
+<table width="100%">
   <tr>
-    <td align="center" width="67%" style="width: 67%;">
+    <td align="center" width="67%">
       <h2>Mitra Boga</h2>
       <a href="https://www.linkedin.com/in/bogamitra/">
         <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
@@ -642,7 +642,7 @@ This project can grow from a classroom demo into a more production-oriented biom
         <img src="https://img.shields.io/badge/X-Follow-black?logo=x" />
       </a>
     </td>
-    <td align="center" width="33%" style="width: 33%;">
+    <td align="center" width="33%">
       <b>Sindhura Peri</b><br/><br/>
       <a href="https://www.linkedin.com/in/gayathri-sindhura-peri-1a995b282/">
         <img src="https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin" />
