@@ -103,7 +103,7 @@ Traditional attendance workflows are weak because they often allow:
 
 ---
 
-# ???? System Architecture
+# 🧱 System Architecture
 
 ### Current Applicable and Working Architecture
 
@@ -124,6 +124,7 @@ Traditional attendance workflows are weak because they often allow:
 </p>
 
 <p align="center"><i>This diagram shows the cloud architecture version of SmartAttend if the platform were implemented fully on AWS, with Route 53, ALB, EC2, RDS, S3, Lambda, SageMaker, monitoring, and security services.</i></p>
+
 ---
 
 # 🏗 Architecture Overview
@@ -241,7 +242,7 @@ Current local evaluation snapshot:
 
 <p align="center">
   <a href="assets/liveness_roc_curve.png">
-    <img src="assets/liveness_roc_curve.png" width="85%" alt="SmartAttend ROC Curve"/>
+    <img src="assets/liveness_roc_curve.png" width="80%" alt="SmartAttend ROC Curve"/>
   </a>
 </p>
 
@@ -249,11 +250,11 @@ Current local evaluation snapshot:
 
 <p align="center">
   <a href="assets/liveness_confusion_matrix.png">
-    <img src="assets/liveness_confusion_matrix.png" width="78%" alt="SmartAttend Liveness Confusion Matrix"/>
+    <img src="assets/liveness_confusion_matrix.png" width="80%" alt="SmartAttend Liveness Confusion Matrix"/>
   </a>
 </p>
 
-<p align="center"><i>Submission-ready confusion matrix generated from the same evaluation run. Each cell shows count and row-normalized percentage.</i></p>
+<p align="center"><i>Confusion matrix generated from the same evaluation run. Each cell shows the count and row-normalized percentage.</i></p>
 
 Notes:
 
