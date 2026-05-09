@@ -204,7 +204,7 @@ The app supports:
 
 ---
 
-## ⚙️ Tech Stack
+## 🦾 Tech Stack
 
 - Python
 - Streamlit
