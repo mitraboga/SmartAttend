@@ -79,7 +79,7 @@ Traditional attendance workflows are weak because they often allow:
 - Stores records for departments, programs, sections, courses, and offerings
 - Supports role-based access for admins and faculty
 - Opens attendance only for specific class sessions
-- Verifies attendance using claimed roll number plus face scan
+- Verifies attendance using the claimed roll number plus face scan
 - Uses a CNN-based liveness model to reject spoof attempts
 - Logs official attendance and separate verification attempts
 - Creates reviewable exceptions for mismatches and suspicious scans
@@ -192,7 +192,7 @@ This creates a much stronger audit trail.
 
 ### 4. Role-Based Operations
 The system supports:
-- Admin operations for platform and academic setup
+- Admin operations for the platform and academic setup
 - Faculty-scoped operations for sessions, attendance, and exception review
 
 ### 5. Managed Infrastructure Support
@@ -204,7 +204,7 @@ The app supports:
 
 ---
 
-## 🏗 Tech Stack
+## ⚙️ Tech Stack
 
 - Python
 - Streamlit
