@@ -99,16 +99,27 @@ Traditional attendance workflows are weak because they often allow:
 
 ---
 
-# 🧩 System Architecture
+# ???? System Architecture
+
+### Current Applicable and Working Architecture
 
 <p align="center">
-  <a href="assets/architecture.png">
-    <img src="assets/architecture.png" width="95%" alt="SmartAttend Architecture Diagram"/>
+  <a href="assets/mermaid-diagram.png">
+    <img src="assets/mermaid-diagram.png" width="95%" alt="SmartAttend Current Working Architecture Diagram"/>
   </a>
 </p>
 
-<p align="center"><i>End-to-end SmartAttend pipeline covering enrollment, verification, training, storage, and reporting.</i></p>
+<p align="center"><i>This is the current applicable and working SmartAttend architecture: Hugging Face Space hosting, Streamlit application runtime, local model training, Neon PostgreSQL, S3-backed face assets, and the live CNN-based attendance verification pipeline.</i></p>
 
+### Full AWS Cloud Architecture Reference
+
+<p align="center">
+  <a href="assets/SmartAttend AWS Architecture Diagram.png">
+    <img src="assets/SmartAttend AWS Architecture Diagram.png" width="95%" alt="SmartAttend Full AWS Cloud Architecture Diagram"/>
+  </a>
+</p>
+
+<p align="center"><i>This diagram shows the cloud architecture version of SmartAttend if the platform were implemented fully on AWS, with Route 53, ALB, EC2, RDS, S3, Lambda, SageMaker, monitoring, and security services.</i></p>
 ---
 
 # 🏗 Architecture Overview
