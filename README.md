@@ -653,13 +653,3 @@ This project can grow from a classroom demo into a more production-oriented biom
     </td>
   </tr>
 </table>
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
-
----
-
-> This repository demonstrates a real-world AI-powered attendance verification system using face recognition, liveness detection, secure logging, class-session attendance controls, and a modular Streamlit-based workflow.
